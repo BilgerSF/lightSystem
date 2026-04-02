@@ -244,9 +244,35 @@ async function demo() {
   process.exit(0);
 }
 
+// ─── Per-system API (used by server.js for split Hue/Govee control) ──────────
+
+async function hueOn()  { await hueSetAll(new LightState().on()); }
+async function hueOff() { await hueSetAll(new LightState().off()); }
+async function setHueColor(r, g, b) {
+  const [x, y] = rgbToXy(r, g, b);
+  await hueSetAll(new LightState().on().xy(x, y));
+}
+async function setHueBrightness(pct) {
+  await hueSetAll(new LightState().on().brightness(Math.max(1, Math.min(100, pct))));
+}
+
+async function goveeOn()  { await goveeAll(d => d.actions.setOn()); }
+async function goveeOff() { await goveeAll(d => d.actions.setOff()); }
+async function setGoveeColor(r, g, b) {
+  await goveeAll(d => d.actions.setColor({ rgb: [r, g, b] }));
+}
+async function setGoveeBrightness(pct) {
+  await goveeAll(d => d.actions.setBrightness(Math.max(1, Math.min(100, pct))));
+}
+
 // Run demo when executed directly; export API for external use
 if (require.main === module) {
   demo().catch(err => { console.error('\nError:', err.message); process.exit(1); });
 } else {
-  module.exports = { init, turnOn, turnOff, setColor, setBrightness };
+  module.exports = {
+    init, turnOn, turnOff, setColor, setBrightness,
+    // Per-system
+    hueOn, hueOff, setHueColor, setHueBrightness,
+    goveeOn, goveeOff, setGoveeColor, setGoveeBrightness,
+  };
 }
