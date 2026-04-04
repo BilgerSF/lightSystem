@@ -591,8 +591,6 @@
   function selectStrip(el, hex) {
     document.querySelectorAll('.color-strip').forEach(s => s.classList.remove('active'));
     el.classList.add('active');
-    const { r, g, b } = hexToRgb(hex);
-    api('/api/color', { r, g, b });
     fxColorReady = true;
     updateFxAvailability();
   }
