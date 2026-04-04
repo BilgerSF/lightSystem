@@ -499,7 +499,7 @@
 
   // 6 FX effects mapped to fx-grid (3×2)
   const FX_EFFECTS = [
-    { id: 'running',     label: 'RUN' },
+    { id: 'fade',        label: 'FADE' },
     { id: 'color-cycle', label: 'FX2' },
     { id: 'strobe',      label: 'FX3' },
     { id: 'candle',      label: 'FX4', disabled: true },
@@ -661,7 +661,7 @@
     btn.classList.add('active');
     activeEffect = effectId;
     const body = { effect: effectId };
-    if (effectId === 'running') {
+    if (effectId === 'fade') {
       const { r, g, b } = hexToRgb(fxColor);
       Object.assign(body, { r, g, b, timer: activeTimer });
     }

@@ -130,7 +130,7 @@ app.post('/api/effect', async (req, res) => {
     }
 
     // ── Dynamic effects ──
-    if (effect === 'running') {
+    if (effect === 'fade') {
       const { r = 255, g = 255, b = 255 } = req.body;
       await applyPower(target, true);
       await applyColor(target, r, g, b);
