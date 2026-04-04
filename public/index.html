@@ -442,10 +442,10 @@
 
         <!-- Timer buttons -->
         <div class="timer-col">
-          <button class="btn timer-btn" onclick="applyTimer(60, this)">60 <span class="unit">SEC</span></button>
-          <button class="btn timer-btn" onclick="applyTimer(45, this)">45 <span class="unit">SEC</span></button>
-          <button class="btn timer-btn" onclick="applyTimer(30, this)">30 <span class="unit">SEC</span></button>
-          <button class="btn timer-btn" onclick="applyTimer(15, this)">15 <span class="unit">SEC</span></button>
+          <button class="btn timer-btn" data-secs="60" onclick="applyTimer(60, this)">60 <span class="unit">SEC</span></button>
+          <button class="btn timer-btn" data-secs="45" onclick="applyTimer(45, this)">45 <span class="unit">SEC</span></button>
+          <button class="btn timer-btn" data-secs="30" onclick="applyTimer(30, this)">30 <span class="unit">SEC</span></button>
+          <button class="btn timer-btn" data-secs="15" onclick="applyTimer(15, this)">15 <span class="unit">SEC</span></button>
         </div>
 
         <!-- FX buttons 3×2 -->
@@ -476,10 +476,12 @@
   let activeEffect   = null;
   let lightsOn       = false;
   let currentBri     = 80;
-  let activeTimer    = null;
-  let timerInterval  = null;
+  let activeTimer       = null;
+  let timerInterval     = null;
+  let countdownInterval = null;
   let fxColorReady   = false;
   let fxTimerReady   = false;
+  let fxColor        = null;
 
   // 10 swatches: 5 columns × 2 rows
   const SWATCHES = [
@@ -497,7 +499,7 @@
 
   // 6 FX effects mapped to fx-grid (3×2)
   const FX_EFFECTS = [
-    { id: 'breathing',   label: 'FX1' },
+    { id: 'running',     label: 'RUN' },
     { id: 'color-cycle', label: 'FX2' },
     { id: 'strobe',      label: 'FX3' },
     { id: 'candle',      label: 'FX4', disabled: true },
@@ -591,6 +593,7 @@
   function selectStrip(el, hex) {
     document.querySelectorAll('.color-strip').forEach(s => s.classList.remove('active'));
     el.classList.add('active');
+    fxColor      = hex;
     fxColorReady = true;
     updateFxAvailability();
   }
@@ -618,20 +621,21 @@
   // ── Timer ───────────────────────────────────────────────────────────────────
 
   function applyTimer(seconds, btn) {
-    document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    // Clear any running countdown/timer
     clearTimeout(timerInterval);
-    activeTimer = seconds;
+    clearInterval(countdownInterval);
+    timerInterval     = null;
+    countdownInterval = null;
+    // Reset all timer button labels and mark selected
+    document.querySelectorAll('.timer-btn').forEach(b => {
+      b.innerHTML = `${b.dataset.secs} <span class="unit">SEC</span>`;
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    activeTimer  = seconds;
     fxTimerReady = true;
     updateFxAvailability();
     showToast(`Timer: ${seconds}s`);
-    timerInterval = setTimeout(async () => {
-      await api('/api/power', { state: 'off' });
-      document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
-      lightsOn = false;
-      document.getElementById('powerIndicator').classList.remove('on');
-      showToast('Timer: lights off');
-    }, seconds * 1000);
   }
 
   // ── FX ───────────────────────────────────────────────────────────────────────
@@ -656,8 +660,37 @@
     }
     btn.classList.add('active');
     activeEffect = effectId;
-    await api('/api/effect', { effect: effectId });
+    const body = { effect: effectId };
+    if (effectId === 'running') {
+      const { r, g, b } = hexToRgb(fxColor);
+      Object.assign(body, { r, g, b, timer: activeTimer });
+    }
+    await api('/api/effect', body);
     showToast(`Effect: ${btn.textContent}`);
+
+    // Start countdown on the active timer button
+    const timerBtn = document.querySelector('.timer-btn.active');
+    let remaining = activeTimer;
+    clearInterval(countdownInterval);
+    clearTimeout(timerInterval);
+    countdownInterval = setInterval(() => {
+      remaining--;
+      if (timerBtn && remaining > 0) {
+        timerBtn.innerHTML = `${remaining} <span class="unit">SEC</span>`;
+      }
+    }, 1000);
+    timerInterval = setTimeout(async () => {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      document.querySelectorAll('.timer-btn').forEach(b => {
+        b.innerHTML = `${b.dataset.secs} <span class="unit">SEC</span>`;
+        b.classList.remove('active');
+      });
+      document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
+      activeEffect = null;
+      await api('/api/power', { state: 'on' }); // stopEffect server-side, leave lights on
+      showToast('Effect stopped');
+    }, activeTimer * 1000);
   }
 
   // ── Toast ────────────────────────────────────────────────────────────────────
