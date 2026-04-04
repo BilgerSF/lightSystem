@@ -13,7 +13,7 @@
 
 const express    = require('express');
 const path       = require('path');
-const controller = require('./test');
+const controller = require('./controller');
 
 const app  = express();
 const PORT = 3000;
