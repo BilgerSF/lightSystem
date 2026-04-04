@@ -9,19 +9,21 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:         #0d0d14;
-      --surface:    rgba(255,255,255,0.05);
-      --surface-hi: rgba(255,255,255,0.09);
-      --border:     rgba(255,255,255,0.08);
-      --text:       #e8e8f0;
-      --muted:      rgba(232,232,240,0.45);
-      --accent:     #7c6ff7;
-      --accent2:    #a78bfa;
-      --green:      #34d399;
-      --red:        #f87171;
-      --radius:     16px;
-      --radius-sm:  10px;
-      --transition: 0.18s ease;
+      --bg:          #d6d0c8;
+      --panel:       #c8c2ba;
+      --btn:         #afa298;
+      --btn-hi:      #bdb0a6;
+      --btn-shadow:  #8a7e74;
+      --border:      #c0b8ae;
+      --text:        #2e2318;
+      --text-muted:  #7a6a58;
+      --text-label:  #6a5a48;
+      --accent:      #8a7a68;
+      --green:       #40b870;
+      --red:         #d04040;
+      --radius:      12px;
+      --radius-sm:   8px;
+      --transition:  0.12s ease;
     }
 
     html { scroll-behavior: smooth; }
@@ -29,450 +31,400 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       min-height: 100vh;
-      padding: 24px 20px 48px;
-      background-image:
-        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(124,111,247,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(167,139,250,0.08) 0%, transparent 55%);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 20px 56px;
     }
 
-    /* ── Layout ───────────────────────────────────────────────────────────── */
-    .container {
-      max-width: 840px;
-      margin: 0 auto;
+    /* ── Panel ────────────────────────────────────────────────────────────── */
+    .panel {
+      width: 100%;
+      max-width: 1280px;
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
+      box-shadow:
+        8px 8px 20px rgba(0,0,0,0.28),
+        -3px -3px 10px rgba(255,255,255,0.38);
     }
 
-    /* ── Card ─────────────────────────────────────────────────────────────── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px 24px;
-      backdrop-filter: blur(10px);
-      transition: background var(--transition);
-    }
-    .card:hover { background: var(--surface-hi); }
-
-    .card-title {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 18px;
-    }
-
-    /* ── Header ───────────────────────────────────────────────────────────── */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 0 8px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    .logo-icon {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-    }
-
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 13px;
-      color: var(--muted);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 6px 14px;
-    }
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #555;
-      transition: background 0.4s;
-      flex-shrink: 0;
-    }
-    .status-dot.connected    { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .status-dot.disconnected { background: var(--red); }
-    .status-dot.connecting   { background: #f59e0b; animation: blink 1s infinite; }
-
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    /* ── Segmented target selector ────────────────────────────────────────── */
-    .target-row {
-      display: flex;
-      gap: 8px;
-    }
-    .target-btn {
-      flex: 1;
-      padding: 11px 8px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: all var(--transition);
-      text-align: center;
-      user-select: none;
-    }
-    .target-btn:hover { background: var(--surface-hi); color: var(--text); }
-    .target-btn.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-color: transparent;
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(124,111,247,0.35);
-    }
-    .target-label { display: flex; align-items: center; gap: 6px; justify-content: center; }
-    .target-dot { width: 7px; height: 7px; border-radius: 50%; }
-    .hue-dot   { background: #fbbf24; }
-    .govee-dot { background: #34d399; }
-    .both-dot  { background: linear-gradient(90deg,#fbbf24,#34d399); }
-
-    /* ── Two-column row ───────────────────────────────────────────────────── */
-    .row-2 {
-      display: grid;
-      grid-template-columns: 1fr 1.6fr;
-      gap: 16px;
-    }
-
-    /* ── Power buttons ────────────────────────────────────────────────────── */
-    .power-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      height: 100%;
-    }
-    .power-btn {
-      flex: 1;
+    /* ── Raised button mixin ──────────────────────────────────────────────── */
+    .btn {
+      background: var(--btn);
       border: none;
       border-radius: var(--radius-sm);
-      font-size: 15px;
-      font-weight: 700;
+      color: var(--text);
       cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      user-select: none;
       transition: all var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 56px;
+      box-shadow:
+        3px 3px 6px rgba(0,0,0,0.22),
+        -1px -1px 4px rgba(255,255,255,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.28);
     }
-    .power-btn.on {
-      background: linear-gradient(135deg, #f59e0b, #fbbf24);
-      color: #1a1200;
-      box-shadow: 0 4px 16px rgba(251,191,36,0.25);
+    .btn:hover {
+      background: var(--btn-hi);
+      box-shadow:
+        4px 4px 8px rgba(0,0,0,0.22),
+        -1px -1px 4px rgba(255,255,255,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.3);
     }
-    .power-btn.on:hover  { box-shadow: 0 6px 24px rgba(251,191,36,0.4); transform: translateY(-1px); }
-    .power-btn.off {
-      background: rgba(248,113,113,0.15);
-      color: var(--red);
-      border: 1px solid rgba(248,113,113,0.25);
-    }
-    .power-btn.off:hover {
-      background: rgba(248,113,113,0.25);
-      box-shadow: 0 4px 16px rgba(248,113,113,0.2);
-      transform: translateY(-1px);
+    .btn:active, .btn.active {
+      box-shadow:
+        1px 1px 2px rgba(0,0,0,0.18),
+        inset 2px 2px 5px rgba(0,0,0,0.18),
+        inset -1px -1px 2px rgba(255,255,255,0.28);
+      transform: translateY(1px);
+      background: #9e9288;
     }
 
-    /* ── Color section ────────────────────────────────────────────────────── */
-    .swatches {
+    /* ── Section label ────────────────────────────────────────────────────── */
+    .section-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-label);
+    }
+
+    /* ── Target row ───────────────────────────────────────────────────────── */
+    .target-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .target-btn {
+      padding: 15px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
+
+    /* ── Two-column main layout ───────────────────────────────────────────── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    /* ── Mid section: brightness + color ──────────────────────────────────── */
+    .mid-section {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 12px;
+      align-items: start;
+      background: #b5afa8;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.18), inset -1px -1px 3px rgba(255,255,255,0.18);
+    }
+
+    /* ── Brightness column ────────────────────────────────────────────────── */
+    .bri-col {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .bri-header {
+      margin-bottom: 2px;
+    }
+    .bri-btn {
+      padding: 11px 0;
+      width: 100%;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border-radius: 8px;
+    }
+    .bri-btn.active {
+      box-shadow:
+        1px 1px 2px rgba(0,0,0,0.18),
+        inset 2px 2px 5px rgba(0,0,0,0.18),
+        inset -1px -1px 2px rgba(255,255,255,0.28);
+      background: #9e9288;
+    }
+
+    /* ── Color grid ───────────────────────────────────────────────────────── */
+    .color-col {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .color-header {
+      text-align: right;
+    }
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
     }
     .swatch {
-      width: 30px; height: 30px;
+      aspect-ratio: 1;
       border-radius: 8px;
       cursor: pointer;
       border: 2px solid transparent;
       transition: all var(--transition);
-      flex-shrink: 0;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.2), -1px -1px 3px rgba(255,255,255,0.3);
     }
-    .swatch:hover    { transform: scale(1.15); border-color: rgba(255,255,255,0.4); }
-    .swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
+    .swatch:hover { transform: scale(1.08); }
+    .swatch.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.5), 2px 2px 4px rgba(0,0,0,0.2);
+    }
 
-    .color-picker-row {
+    /* ── Effects section ──────────────────────────────────────────────────── */
+    .fx-section {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      gap: 10px;
+      background: #b5afa8;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.18), inset -1px -1px 3px rgba(255,255,255,0.18);
     }
-    .color-picker-wrap {
-      position: relative;
-      width: 40px; height: 40px;
-      flex-shrink: 0;
-    }
-    .color-picker-wrap input[type="color"] {
-      position: absolute; inset: 0;
-      opacity: 0;
-      width: 100%; height: 100%;
-      cursor: pointer;
-    }
-    .color-preview {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      border: 2px solid rgba(255,255,255,0.15);
-      pointer-events: none;
-      transition: background 0.1s;
-    }
-    .color-hex {
-      font-size: 13px;
-      color: var(--muted);
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      flex: 1;
-    }
-    .apply-color-btn {
-      padding: 9px 18px;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--transition);
-      white-space: nowrap;
-    }
-    .apply-color-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-
-    /* ── Brightness ───────────────────────────────────────────────────────── */
-    .brightness-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .brightness-icon { font-size: 16px; flex-shrink: 0; color: var(--muted); }
-    .brightness-icon.hi { color: var(--text); }
-
-    input[type="range"] {
-      flex: 1;
-      -webkit-appearance: none;
-      appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      background: var(--border);
-      outline: none;
-      cursor: pointer;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px; height: 20px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(124,111,247,0.45);
-      transition: transform var(--transition);
-    }
-    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-
-    .brightness-value {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      min-width: 38px;
+    .fx-header {
       text-align: right;
     }
 
-    /* ── Effects grid ─────────────────────────────────────────────────────── */
-    .effects-grid {
+    /* Color strip selector */
+    .color-strips {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      grid-template-columns: repeat(6, 1fr);
+      gap: 7px;
+    }
+    .color-strip {
+      height: 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all var(--transition);
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.18), -1px -1px 2px rgba(255,255,255,0.3);
+    }
+    .color-strip.active {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+    }
+
+    /* Timer + FX grid */
+    .fx-body {
+      display: grid;
+      grid-template-columns: 100px 1fr;
       gap: 10px;
     }
 
-    .effect-btn {
-      padding: 14px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all var(--transition);
+    .timer-col {
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 7px;
-      text-align: center;
     }
-    .effect-btn:hover {
-      background: var(--surface-hi);
-      border-color: rgba(255,255,255,0.16);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    .timer-btn {
+      padding: 13px 0;
+      width: 100%;
+      font-size: 12px;
+      border-radius: 8px;
     }
-    .effect-btn.active {
-      border-color: var(--accent);
-      background: rgba(124,111,247,0.15);
-      box-shadow: 0 0 0 1px rgba(124,111,247,0.4);
-    }
-    .effect-btn.dynamic.active {
-      border-color: var(--accent2);
-      animation: pulse-border 2s infinite;
-    }
-    @keyframes pulse-border {
-      0%,100% { box-shadow: 0 0 0 1px rgba(167,139,250,0.4); }
-      50%      { box-shadow: 0 0 0 3px rgba(167,139,250,0.2); }
+    .timer-btn .unit {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-left: 2px;
     }
 
-    .effect-swatch {
-      width: 28px; height: 28px;
+    .fx-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .fx-btn {
+      padding: 18px 4px;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+    .fx-btn.active {
+      background: #9e9288;
+      box-shadow:
+        1px 1px 2px rgba(0,0,0,0.18),
+        inset 2px 2px 5px rgba(0,0,0,0.18),
+        inset -1px -1px 2px rgba(255,255,255,0.28);
+    }
+
+    /* ── Power toggle ─────────────────────────────────────────────────────── */
+    .power-row {
+      display: flex;
+      justify-content: center;
+      padding: 4px 0 2px;
+    }
+    .power-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--btn);
+      border-radius: 40px;
+      padding: 11px 24px;
+      cursor: pointer;
+      box-shadow:
+        3px 3px 6px rgba(0,0,0,0.22),
+        -1px -1px 4px rgba(255,255,255,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.28);
+      border: none;
+      transition: all var(--transition);
+      min-width: 200px;
+      justify-content: space-between;
+    }
+    .power-toggle:hover { background: var(--btn-hi); }
+    .power-icon {
+      width: 32px; height: 32px;
       border-radius: 50%;
+      background: var(--panel);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      box-shadow: inset 1px 1px 3px rgba(0,0,0,0.2), inset -1px -1px 2px rgba(255,255,255,0.3);
       flex-shrink: 0;
     }
-    .effect-icon { font-size: 22px; }
-
-    .section-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.09em;
+    .power-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--muted);
-      margin: 20px 0 12px;
+      color: var(--text-muted);
+      flex: 1;
+      text-align: center;
     }
-    .section-label:first-child { margin-top: 0; }
+    .power-indicator {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 5px rgba(200,60,60,0.5);
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .power-indicator.on {
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(64,184,112,0.6);
+    }
 
     /* ── Toast ────────────────────────────────────────────────────────────── */
     #toast {
       position: fixed;
-      bottom: 28px; left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(15,15,25,0.95);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 20px;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: rgba(46,35,24,0.92);
+      color: #e8ddd0;
+      padding: 9px 20px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 12px;
+      font-weight: 500;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.25s, transform 0.25s;
-      backdrop-filter: blur(8px);
+      transition: opacity 0.22s, transform 0.22s;
       white-space: nowrap;
       z-index: 100;
+      letter-spacing: 0.02em;
     }
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-    #toast.error { border-color: rgba(248,113,113,0.4); color: var(--red); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { background: rgba(140,40,40,0.92); }
 
     /* ── Disabled state ───────────────────────────────────────────────────── */
-    .disabled { pointer-events: none; opacity: 0.4; }
+    .disabled { pointer-events: none; opacity: 0.45; }
 
     /* ── Responsive ───────────────────────────────────────────────────────── */
-    @media (max-width: 580px) {
-      .row-2 { grid-template-columns: 1fr; }
-      .effects-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    /* Tablet: collapse two-column main grid → single column */
+    @media (max-width: 700px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .fx-header { text-align: left; }
+    }
+    /* Mobile: shrink internal grids */
+    @media (max-width: 480px) {
+      body { padding: 16px 10px 40px; }
+      .panel { padding: 14px; gap: 10px; border-radius: 18px; }
+      .mid-section { grid-template-columns: 80px 1fr; gap: 8px; }
+      .fx-body { grid-template-columns: 80px 1fr; gap: 8px; }
+      .bri-btn { padding: 9px 0; font-size: 12px; }
+      .target-btn { padding: 12px 8px; font-size: 11px; }
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-
-  <!-- Header -->
-  <header>
-    <div class="logo">
-      <div class="logo-icon">💡</div>
-      LightSystem
-    </div>
-    <div class="status-badge">
-      <span class="status-dot connecting" id="statusDot"></span>
-      <span id="statusText">Connecting…</span>
-    </div>
-  </header>
+<div class="panel">
 
   <!-- Target selector -->
-  <div class="card" style="padding:18px 24px;">
-    <div class="card-title">Control Target</div>
-    <div class="target-row">
-      <button class="target-btn" data-target="hue" onclick="setTarget('hue')">
-        <span class="target-label"><span class="target-dot hue-dot"></span>Hue Only</span>
-      </button>
-      <button class="target-btn active" data-target="both" onclick="setTarget('both')">
-        <span class="target-label"><span class="target-dot both-dot"></span>Both</span>
-      </button>
-      <button class="target-btn" data-target="govee" onclick="setTarget('govee')">
-        <span class="target-label"><span class="target-dot govee-dot"></span>Govee Only</span>
-      </button>
-    </div>
+  <div class="target-row">
+    <button class="btn target-btn" data-target="hue" onclick="setTarget('hue')">HUE</button>
+    <button class="btn target-btn active" data-target="both" onclick="setTarget('both')">BOTH</button>
+    <button class="btn target-btn" data-target="govee" onclick="setTarget('govee')">GOVEE</button>
   </div>
 
-  <!-- Power + Color -->
-  <div class="row-2" id="controls">
+  <!-- Two-column main body -->
+  <div class="main-grid" id="controls">
 
-    <!-- Power -->
-    <div class="card">
-      <div class="card-title">Power</div>
-      <div class="power-buttons">
-        <button class="power-btn on" onclick="setPower('on')">
-          ☀️ Turn On
-        </button>
-        <button class="power-btn off" onclick="setPower('off')">
-          🌙 Turn Off
-        </button>
+    <!-- LEFT: Brightness + Color -->
+    <div class="mid-section">
+
+      <!-- Brightness column -->
+      <div class="bri-col">
+        <div class="section-label bri-header">BRIGHTNESS</div>
+        <button class="btn bri-btn" onclick="applyBrightnessBtn(100)">100</button>
+        <button class="btn bri-btn" onclick="applyBrightnessBtn(80)">80</button>
+        <button class="btn bri-btn" onclick="applyBrightnessBtn(60)">60</button>
+        <button class="btn bri-btn" onclick="applyBrightnessBtn(40)">40</button>
+        <button class="btn bri-btn" onclick="applyBrightnessBtn(20)">20</button>
       </div>
+
+      <!-- Color grid -->
+      <div class="color-col">
+        <div class="section-label color-header">COLOR</div>
+        <div class="swatches" id="swatches"></div>
+      </div>
+
     </div>
 
-    <!-- Color -->
-    <div class="card">
-      <div class="card-title">Color</div>
+    <!-- RIGHT: Effects -->
+    <div class="fx-section">
+      <div class="section-label fx-header">EFFECTS</div>
 
-      <div class="swatches" id="swatches"></div>
+      <!-- Color strip palette selector -->
+      <div class="color-strips" id="colorStrips"></div>
 
-      <div class="color-picker-row">
-        <div class="color-picker-wrap">
-          <div class="color-preview" id="colorPreview" style="background:#ffffff;"></div>
-          <input type="color" id="colorPicker" value="#ffffff" oninput="onColorInput(this.value)" />
+      <!-- Timer + FX grid -->
+      <div class="fx-body">
+
+        <!-- Timer buttons -->
+        <div class="timer-col">
+          <button class="btn timer-btn" onclick="applyTimer(60, this)">60 <span class="unit">SEC</span></button>
+          <button class="btn timer-btn" onclick="applyTimer(45, this)">45 <span class="unit">SEC</span></button>
+          <button class="btn timer-btn" onclick="applyTimer(30, this)">30 <span class="unit">SEC</span></button>
+          <button class="btn timer-btn" onclick="applyTimer(15, this)">15 <span class="unit">SEC</span></button>
         </div>
-        <span class="color-hex" id="colorHex">#ffffff</span>
-        <button class="apply-color-btn" onclick="applyCustomColor()">Apply</button>
+
+        <!-- FX buttons 3×2 -->
+        <div class="fx-grid" id="fxGrid"></div>
+
       </div>
     </div>
 
   </div>
 
-  <!-- Brightness -->
-  <div class="card">
-    <div class="card-title">Brightness</div>
-    <div class="brightness-row">
-      <span class="brightness-icon">🌑</span>
-      <input type="range" id="briSlider" min="1" max="100" value="80"
-             oninput="onBriInput(this.value)"
-             onchange="applyBrightness(this.value)" />
-      <span class="brightness-icon hi">☀️</span>
-      <span class="brightness-value" id="briValue">80%</span>
-    </div>
-  </div>
-
-  <!-- Effects -->
-  <div class="card">
-    <div class="card-title">Effects</div>
-
-    <div class="section-label">Scenes</div>
-    <div class="effects-grid" id="staticEffects"></div>
-
-    <div class="section-label">Dynamic</div>
-    <div class="effects-grid" id="dynamicEffects"></div>
+  <!-- Power toggle -->
+  <div class="power-row">
+    <button class="power-toggle" onclick="togglePower()">
+      <div class="power-icon">⏻</div>
+      <span class="power-label">ON / OFF</span>
+      <div class="power-indicator" id="powerIndicator"></div>
+    </button>
   </div>
 
 </div>
@@ -482,41 +434,45 @@
 <script>
   // ── Config ──────────────────────────────────────────────────────────────────
 
-  let currentTarget = 'both';
-  let activeEffect  = null;
-  let briTimer      = null;
+  let currentTarget  = 'both';
+  let activeEffect   = null;
+  let lightsOn       = false;
+  let currentBri     = 80;
+  let activeTimer    = null;
+  let timerInterval  = null;
 
+  // 10 swatches: 5 columns × 2 rows
   const SWATCHES = [
-    { hex: '#ffffff', label: 'White'  },
-    { hex: '#ffc58f', label: 'Warm'   },
-    { hex: '#ff1e1e', label: 'Red'    },
-    { hex: '#ff6400', label: 'Orange' },
-    { hex: '#ffe600', label: 'Yellow' },
-    { hex: '#00c850', label: 'Green'  },
-    { hex: '#00c8dc', label: 'Cyan'   },
-    { hex: '#1450ff', label: 'Blue'   },
-    { hex: '#a000ff', label: 'Purple' },
-    { hex: '#ff0096', label: 'Pink'   },
+    { hex: '#e03030', label: 'Red'        },
+    { hex: '#f07030', label: 'Orange'     },
+    { hex: '#f0d030', label: 'Yellow'     },
+    { hex: '#30cc60', label: 'Green'      },
+    { hex: '#50a8e8', label: 'Sky Blue'   },
+    { hex: '#8030d0', label: 'Purple'     },
+    { hex: '#e030c8', label: 'Magenta'    },
+    { hex: '#f090b8', label: 'Pink'       },
+    { hex: '#20c8c0', label: 'Teal'       },
+    { hex: '#90c8f0', label: 'Pale Blue'  },
   ];
 
-  const STATIC_EFFECTS = [
-    { id: 'warm-white', label: 'Warm White',  color: '#ffc58f' },
-    { id: 'cool-white', label: 'Cool White',  color: '#dcebff' },
-    { id: 'sunset',     label: 'Sunset',      color: '#ff501e' },
-    { id: 'ocean',      label: 'Ocean',       color: '#0082c8' },
-    { id: 'forest',     label: 'Forest',      color: '#14a03c' },
-    { id: 'purple',     label: 'Purple',      color: '#a000ff' },
-    { id: 'red-alert',  label: 'Red Alert',   color: '#ff1414' },
-    { id: 'candle',     label: 'Candle',      color: '#ff9329' },
-    { id: 'movie',      label: 'Movie Night', color: '#0a0a32' },
-    { id: 'energize',   label: 'Energize',    color: '#80c4ff' },
+  // Color strips for effect palette selection
+  const COLOR_STRIPS = [
+    { hex: '#e03030', id: 'strip-red'    },
+    { hex: '#30cc60', id: 'strip-green'  },
+    { hex: '#90c8f0', id: 'strip-blue'   },
+    { hex: '#f0d030', id: 'strip-yellow' },
+    { hex: '#8030d0', id: 'strip-purple' },
+    { hex: '#e030c8', id: 'strip-pink'   },
   ];
 
-  const DYNAMIC_EFFECTS = [
-    { id: 'breathing',    label: 'Breathing',    icon: '🫁' },
-    { id: 'color-cycle',  label: 'Color Cycle',  icon: '🌈' },
-    { id: 'strobe',       label: 'Strobe',       icon: '⚡' },
-    { id: 'candle',       label: 'Candle',       icon: '🕯️' },
+  // 6 FX effects mapped to fx-grid (3×2)
+  const FX_EFFECTS = [
+    { id: 'breathing',   label: 'FX1' },
+    { id: 'color-cycle', label: 'FX2' },
+    { id: 'strobe',      label: 'FX3' },
+    { id: 'candle',      label: 'FX4' },
+    { id: 'sunset',      label: 'FX5' },
+    { id: 'ocean',       label: 'FX6' },
   ];
 
   // ── Build UI ────────────────────────────────────────────────────────────────
@@ -524,35 +480,36 @@
   function buildSwatches() {
     const el = document.getElementById('swatches');
     SWATCHES.forEach(s => {
-      const btn = document.createElement('div');
-      btn.className = 'swatch';
-      btn.style.background = s.hex;
-      btn.title = s.label;
-      btn.onclick = () => selectSwatch(btn, s.hex);
-      el.appendChild(btn);
+      const div = document.createElement('div');
+      div.className = 'swatch';
+      div.style.background = s.hex;
+      div.title = s.label;
+      div.onclick = () => selectSwatch(div, s.hex);
+      el.appendChild(div);
     });
   }
 
-  function buildEffects() {
-    const staticEl  = document.getElementById('staticEffects');
-    const dynamicEl = document.getElementById('dynamicEffects');
-
-    STATIC_EFFECTS.forEach(e => {
-      const btn = document.createElement('button');
-      btn.className   = 'effect-btn';
-      btn.dataset.id  = e.id;
-      btn.innerHTML   = `<div class="effect-swatch" style="background:${e.color};"></div>${e.label}`;
-      btn.onclick     = () => applyEffect(e.id, btn);
-      staticEl.appendChild(btn);
+  function buildColorStrips() {
+    const el = document.getElementById('colorStrips');
+    COLOR_STRIPS.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'color-strip';
+      div.style.background = s.hex;
+      div.dataset.id = s.id;
+      div.onclick = () => selectStrip(div, s.hex);
+      el.appendChild(div);
     });
+  }
 
-    DYNAMIC_EFFECTS.forEach(e => {
+  function buildFxGrid() {
+    const el = document.getElementById('fxGrid');
+    FX_EFFECTS.forEach(e => {
       const btn = document.createElement('button');
-      btn.className  = 'effect-btn dynamic';
+      btn.className = 'btn fx-btn';
       btn.dataset.id = e.id;
-      btn.innerHTML  = `<span class="effect-icon">${e.icon}</span>${e.label}`;
-      btn.onclick    = () => applyEffect(e.id, btn);
-      dynamicEl.appendChild(btn);
+      btn.textContent = e.label;
+      btn.onclick = () => applyFx(e.id, btn);
+      el.appendChild(btn);
     });
   }
 
@@ -585,10 +542,11 @@
 
   // ── Power ───────────────────────────────────────────────────────────────────
 
-  async function setPower(state) {
-    clearActiveEffect();
-    await api('/api/power', { state });
-    showToast(state === 'on' ? '💡 Lights on' : '🌙 Lights off');
+  async function togglePower() {
+    lightsOn = !lightsOn;
+    document.getElementById('powerIndicator').classList.toggle('on', lightsOn);
+    await api('/api/power', { state: lightsOn ? 'on' : 'off' });
+    showToast(lightsOn ? 'Lights ON' : 'Lights OFF');
   }
 
   // ── Color ───────────────────────────────────────────────────────────────────
@@ -598,69 +556,73 @@
     return { r: (n>>16)&255, g: (n>>8)&255, b: n&255 };
   }
 
-  function onColorInput(hex) {
-    document.getElementById('colorPreview').style.background = hex;
-    document.getElementById('colorHex').textContent = hex;
-    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
-  }
-
   function selectSwatch(btn, hex) {
     document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
     btn.classList.add('selected');
-    document.getElementById('colorPicker').value = hex;
-    document.getElementById('colorPreview').style.background = hex;
-    document.getElementById('colorHex').textContent = hex;
-    applyCustomColor();
+    const { r, g, b } = hexToRgb(hex);
+    api('/api/color', { r, g, b });
+    showToast(`Color → ${hex}`);
   }
 
-  async function applyCustomColor() {
-    clearActiveEffect();
-    const hex = document.getElementById('colorPicker').value;
+  function selectStrip(el, hex) {
+    document.querySelectorAll('.color-strip').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
     const { r, g, b } = hexToRgb(hex);
-    await api('/api/color', { r, g, b });
-    showToast(`Color set to ${hex}`);
+    api('/api/color', { r, g, b });
   }
 
   // ── Brightness ──────────────────────────────────────────────────────────────
 
-  function onBriInput(v) {
-    document.getElementById('briValue').textContent = v + '%';
-    // Update slider fill
-    const sl = document.getElementById('briSlider');
-    const pct = (v - sl.min) / (sl.max - sl.min) * 100;
-    sl.style.background = `linear-gradient(to right, var(--accent) ${pct}%, var(--border) ${pct}%)`;
+  function applyBrightnessBtn(pct) {
+    document.querySelectorAll('.bri-btn').forEach(b => b.classList.remove('active'));
+    if (pct > 0) {
+      const btns = document.querySelectorAll('.bri-btn');
+      const vals = [100, 80, 60, 40, 20];
+      const idx  = vals.indexOf(pct);
+      if (idx >= 0) btns[idx].classList.add('active');
+    }
+    currentBri = pct;
+    if (pct === 0) {
+      api('/api/power', { state: 'off' });
+      showToast('Lights OFF');
+    } else {
+      api('/api/brightness', { value: pct });
+      showToast(`Brightness → ${pct}%`);
+    }
   }
 
-  async function applyBrightness(v) {
-    clearTimeout(briTimer);
-    briTimer = setTimeout(async () => {
-      await api('/api/brightness', { value: parseInt(v, 10) });
-    }, 120);
+  // ── Timer ───────────────────────────────────────────────────────────────────
+
+  function applyTimer(seconds, btn) {
+    document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    clearTimeout(timerInterval);
+    activeTimer = seconds;
+    showToast(`Timer: ${seconds}s`);
+    timerInterval = setTimeout(async () => {
+      await api('/api/power', { state: 'off' });
+      document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
+      lightsOn = false;
+      document.getElementById('powerIndicator').classList.remove('on');
+      showToast('Timer: lights off');
+    }, seconds * 1000);
   }
 
-  // ── Effects ─────────────────────────────────────────────────────────────────
+  // ── FX ───────────────────────────────────────────────────────────────────────
 
-  function clearActiveEffect() {
-    document.querySelectorAll('.effect-btn.active').forEach(b => b.classList.remove('active'));
-    activeEffect = null;
-  }
-
-  async function applyEffect(effectId, btn) {
-    // If clicking the already-active dynamic effect, turn off
-    if (btn.classList.contains('dynamic') && btn.classList.contains('active')) {
-      clearActiveEffect();
+  async function applyFx(effectId, btn) {
+    const isActive = btn.classList.contains('active');
+    document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
+    if (isActive) {
+      activeEffect = null;
+      await api('/api/power', { state: 'on' }); // stopEffect() is called server-side
+      showToast('Effect stopped');
       return;
     }
-    clearActiveEffect();
     btn.classList.add('active');
     activeEffect = effectId;
     await api('/api/effect', { effect: effectId });
-    if (!btn.classList.contains('dynamic')) {
-      showToast(`Scene: ${btn.innerText.trim()}`);
-      setTimeout(() => btn.classList.remove('active'), 900);
-    } else {
-      showToast(`Effect: ${btn.innerText.trim()} (tap again to stop)`);
-    }
+    showToast(`Effect: ${btn.textContent}`);
   }
 
   // ── Toast ────────────────────────────────────────────────────────────────────
@@ -679,29 +641,18 @@
   async function checkStatus() {
     try {
       const { ready } = await fetch('/api/status').then(r => r.json());
-      const dot  = document.getElementById('statusDot');
-      const text = document.getElementById('statusText');
       if (ready) {
-        dot.className  = 'status-dot connected';
-        text.textContent = 'Connected';
         document.getElementById('controls').classList.remove('disabled');
-      } else {
-        dot.className  = 'status-dot connecting';
-        text.textContent = 'Initializing…';
       }
-    } catch {
-      document.getElementById('statusDot').className  = 'status-dot disconnected';
-      document.getElementById('statusText').textContent = 'Offline';
-    }
+    } catch { /* server offline — controls stay disabled */ }
   }
 
   // ── Init ─────────────────────────────────────────────────────────────────────
 
   buildSwatches();
-  buildEffects();
-  onBriInput(80); // set initial slider fill
+  buildColorStrips();
+  buildFxGrid();
 
-  // Disable controls until server says ready
   document.getElementById('controls').classList.add('disabled');
 
   checkStatus();
