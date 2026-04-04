@@ -428,7 +428,14 @@
       <div class="section-label fx-header">EFFECTS</div>
 
       <!-- Color strip palette selector -->
-      <div class="color-strips" id="colorStrips"></div>
+      <div class="color-strips">
+        <div class="color-strip" style="background:#e03030" data-id="strip-red"    onclick="selectStrip(this,'#e03030')"></div>
+        <div class="color-strip" style="background:#30cc60" data-id="strip-green"  onclick="selectStrip(this,'#30cc60')"></div>
+        <div class="color-strip" style="background:#90c8f0" data-id="strip-blue"   onclick="selectStrip(this,'#90c8f0')"></div>
+        <div class="color-strip" style="background:#f0d030" data-id="strip-yellow" onclick="selectStrip(this,'#f0d030')"></div>
+        <div class="color-strip" style="background:#8030d0" data-id="strip-purple" onclick="selectStrip(this,'#8030d0')"></div>
+        <div class="color-strip" style="background:#e030c8" data-id="strip-pink"   onclick="selectStrip(this,'#e030c8')"></div>
+      </div>
 
       <!-- Timer + FX grid -->
       <div class="fx-body">
@@ -488,16 +495,6 @@
     { hex: '#90c8f0', label: 'Pale Blue'  },
   ];
 
-  // Color strips for effect palette selection
-  const COLOR_STRIPS = [
-    { hex: '#e03030', id: 'strip-red'    },
-    { hex: '#30cc60', id: 'strip-green'  },
-    { hex: '#90c8f0', id: 'strip-blue'   },
-    { hex: '#f0d030', id: 'strip-yellow' },
-    { hex: '#8030d0', id: 'strip-purple' },
-    { hex: '#e030c8', id: 'strip-pink'   },
-  ];
-
   // 6 FX effects mapped to fx-grid (3×2)
   const FX_EFFECTS = [
     { id: 'breathing',   label: 'FX1' },
@@ -518,18 +515,6 @@
       div.style.background = s.hex;
       div.title = s.label;
       div.onclick = () => selectSwatch(div, s.hex);
-      el.appendChild(div);
-    });
-  }
-
-  function buildColorStrips() {
-    const el = document.getElementById('colorStrips');
-    COLOR_STRIPS.forEach(s => {
-      const div = document.createElement('div');
-      div.className = 'color-strip';
-      div.style.background = s.hex;
-      div.dataset.id = s.id;
-      div.onclick = () => selectStrip(div, s.hex);
       el.appendChild(div);
     });
   }
@@ -702,7 +687,6 @@
   // ── Init ─────────────────────────────────────────────────────────────────────
 
   buildSwatches();
-  buildColorStrips();
   buildFxGrid();
 
   document.getElementById('controls').classList.add('disabled');
