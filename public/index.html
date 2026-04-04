@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -471,6 +471,8 @@
   let currentBri     = 80;
   let activeTimer    = null;
   let timerInterval  = null;
+  let fxColorReady   = false;
+  let fxTimerReady   = false;
 
   // 10 swatches: 5 columns × 2 rows
   const SWATCHES = [
@@ -548,6 +550,8 @@
     });
   }
 
+  function updateFxAvailability() { /* no-op: buttons stay enabled, message shown on click */ }
+
   // ── Target ──────────────────────────────────────────────────────────────────
 
   function setTarget(target) {
@@ -604,6 +608,8 @@
     el.classList.add('active');
     const { r, g, b } = hexToRgb(hex);
     api('/api/color', { r, g, b });
+    fxColorReady = true;
+    updateFxAvailability();
   }
 
   // ── Brightness ──────────────────────────────────────────────────────────────
@@ -633,6 +639,8 @@
     btn.classList.add('active');
     clearTimeout(timerInterval);
     activeTimer = seconds;
+    fxTimerReady = true;
+    updateFxAvailability();
     showToast(`Timer: ${seconds}s`);
     timerInterval = setTimeout(async () => {
       await api('/api/power', { state: 'off' });
@@ -646,6 +654,15 @@
   // ── FX ───────────────────────────────────────────────────────────────────────
 
   async function applyFx(effectId, btn) {
+    if (!fxColorReady && !fxTimerReady) {
+      showToast('Select a color and a timer first', true); return;
+    }
+    if (!fxColorReady) {
+      showToast('Select a color strip first', true); return;
+    }
+    if (!fxTimerReady) {
+      showToast('Select a timer first', true); return;
+    }
     const isActive = btn.classList.contains('active');
     document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
     if (isActive) {
