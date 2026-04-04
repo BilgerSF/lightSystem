@@ -108,6 +108,14 @@
       padding: 15px 8px;
       border-radius: var(--radius-sm);
       font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .target-btn svg {
+      display: block;
+      flex-shrink: 0;
     }
 
     /* ── Two-column main layout ───────────────────────────────────────────── */
@@ -363,9 +371,23 @@
 
   <!-- Target selector -->
   <div class="target-row">
-    <button class="btn target-btn" data-target="hue" onclick="setTarget('hue')">HUE</button>
+    <button class="btn target-btn" data-target="hue" onclick="setTarget('hue')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 4.9 11.9c-.8.8-1.4 1.8-1.7 2.8H8.8c-.3-1-.9-2-1.7-2.8A7 7 0 0 1 12 2z"/>
+      </svg>
+      HUE
+    </button>
     <button class="btn target-btn active" data-target="both" onclick="setTarget('both')">BOTH</button>
-    <button class="btn target-btn" data-target="govee" onclick="setTarget('govee')">GOVEE</button>
+    <button class="btn target-btn" data-target="govee" onclick="setTarget('govee')">
+      <svg width="20" height="12" viewBox="0 0 40 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="1" y="3" width="38" height="6" rx="3" fill="none"/>
+        <circle cx="8"  cy="6" r="1.6" fill="currentColor" stroke="none"/>
+        <circle cx="16" cy="6" r="1.6" fill="currentColor" stroke="none"/>
+        <circle cx="24" cy="6" r="1.6" fill="currentColor" stroke="none"/>
+        <circle cx="32" cy="6" r="1.6" fill="currentColor" stroke="none"/>
+      </svg>
+      GOVEE
+    </button>
   </div>
 
   <!-- Two-column main body -->
