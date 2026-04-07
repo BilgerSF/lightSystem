@@ -678,9 +678,12 @@
       }
     }
     const body = { effect: effectId };
-    if (effectId === 'fade') {
+    if (effectId === 'fade' || effectId === 'dance') {
       const { r, g, b } = hexToRgb(fxColor);
-      Object.assign(body, { r, g, b, timer: activeTimer });
+      Object.assign(body, { r, g, b });
+    }
+    if (effectId === 'fade') {
+      Object.assign(body, { timer: activeTimer });
     }
     await api('/api/effect', body);
     showToast(`Effect: ${btn.textContent}`);

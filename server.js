@@ -164,22 +164,15 @@ app.post('/api/effect', async (req, res) => {
     }
 
     if (effect === 'dance') {
+      const { r = 255, g = 255, b = 255 } = req.body;
       await applyPower(target, true);
-      await applyBrightness(target, 20);
+      await applyColor(target, r, g, b);
+      await applyBrightness(target, 5);
       danceMicVolume = 0;
-      let hue = 0;
       activeEffect = setInterval(async () => {
-        const vol  = danceMicVolume;
-        const bri  = Math.min(100, Math.max(5, Math.round(vol * 700)));
-        const step = Math.max(2, Math.round(vol * 300));
-        hue = (hue + step) % 360;
-        const [r, g, b] = hslToRgb(hue / 360, 1, 0.5);
-        // Send color to all targets; only send brightness to Hue (Govee rate-limit: 1 cmd/200ms)
-        const tasks = [ applyColor(target, r, g, b) ];
-        if (target === 'hue' || target === 'both') {
-          tasks.push(controller.setHueBrightness(bri));
-        }
-        await Promise.all(tasks).catch(() => {});
+        const vol = danceMicVolume;
+        const bri = Math.min(100, Math.max(5, Math.round(vol * 700)));
+        await applyBrightness(target, bri).catch(() => {});
       }, 200);
       return res.json({ ok: true });
     }
