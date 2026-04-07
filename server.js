@@ -171,8 +171,8 @@ app.post('/api/effect', async (req, res) => {
 
       activeEffect = setInterval(async () => {
        console.log(`Dance effect — mic volume: ${danceMicVolume}`);
-       await controller.setGoveeBrightness(danceMicVolume * 1000).catch(() => {});
-      }, 10);
+       await controller.setGoveeBrightness(danceMicVolume * 80).catch(() => {});
+      }, 100);
       return res.json({ ok: true });
     }
 
