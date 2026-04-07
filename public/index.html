@@ -449,7 +449,14 @@
         </div>
 
         <!-- FX buttons 3×2 -->
-        <div class="fx-grid" id="fxGrid"></div>
+        <div class="fx-grid">
+          <button class="btn fx-btn" data-id="fade"        onclick="applyFx('fade', this)">FADE</button>
+          <button class="btn fx-btn" data-id="color-cycle" onclick="applyFx('color-cycle', this)">DANCE</button>
+          <button class="btn fx-btn" data-id="strobe"      onclick="applyFx('strobe', this)">FX3</button>
+          <button class="btn fx-btn fx-disabled" disabled>FX4</button>
+          <button class="btn fx-btn fx-disabled" disabled>FX5</button>
+          <button class="btn fx-btn fx-disabled" disabled>FX6</button>
+        </div>
 
       </div>
     </div>
@@ -497,16 +504,6 @@
     { hex: '#90c8f0', label: 'Pale Blue'  },
   ];
 
-  // 6 FX effects mapped to fx-grid (3×2)
-  const FX_EFFECTS = [
-    { id: 'fade',        label: 'FADE' },
-    { id: 'color-cycle', label: 'FX2' },
-    { id: 'strobe',      label: 'FX3' },
-    { id: 'candle',      label: 'FX4', disabled: true },
-    { id: 'sunset',      label: 'FX5', disabled: true },
-    { id: 'ocean',       label: 'FX6', disabled: true },
-  ];
-
   // ── Build UI ────────────────────────────────────────────────────────────────
 
   function buildSwatches() {
@@ -518,22 +515,6 @@
       div.title = s.label;
       div.onclick = () => selectSwatch(div, s.hex);
       el.appendChild(div);
-    });
-  }
-
-  function buildFxGrid() {
-    const el = document.getElementById('fxGrid');
-    FX_EFFECTS.forEach(e => {
-      const btn = document.createElement('button');
-      btn.className = 'btn fx-btn' + (e.disabled ? ' fx-disabled' : '');
-      btn.dataset.id = e.id;
-      btn.textContent = e.label;
-      if (e.disabled) {
-        btn.disabled = true;
-      } else {
-        btn.onclick = () => applyFx(e.id, btn);
-      }
-      el.appendChild(btn);
     });
   }
 
@@ -718,7 +699,6 @@
   // ── Init ─────────────────────────────────────────────────────────────────────
 
   buildSwatches();
-  buildFxGrid();
 
   document.getElementById('controls').classList.add('disabled');
 
