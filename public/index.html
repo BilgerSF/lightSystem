@@ -451,7 +451,7 @@
         <!-- FX buttons 3×2 -->
         <div class="fx-grid">
           <button class="btn fx-btn" data-id="fade"        onclick="applyFx('fade', this)">FADE</button>
-          <button class="btn fx-btn" data-id="color-cycle" onclick="applyFx('color-cycle', this)">DANCE</button>
+          <button class="btn fx-btn" data-id="dance" onclick="applyFx('dance', this)">DANCE</button>
           <button class="btn fx-btn" data-id="strobe"      onclick="applyFx('strobe', this)">FX3</button>
           <button class="btn fx-btn fx-disabled" disabled>FX4</button>
           <button class="btn fx-btn fx-disabled" disabled>FX5</button>
@@ -489,6 +489,9 @@
   let fxColorReady   = false;
   let fxTimerReady   = false;
   let fxColor        = null;
+  let micStream      = null;
+  let micAudioCtx    = null;
+  let micRafId       = null;  // holds setInterval id for mic polling
 
   // 10 swatches: 5 columns × 2 rows
   const SWATCHES = [
@@ -622,25 +625,58 @@
   // ── FX ───────────────────────────────────────────────────────────────────────
 
   async function applyFx(effectId, btn) {
-    if (!fxColorReady && !fxTimerReady) {
+    const needsTimer = effectId !== 'dance';
+    if (!fxColorReady && (needsTimer && !fxTimerReady)) {
       showToast('Select a color and a timer first', true); return;
     }
     if (!fxColorReady) {
       showToast('Select a color strip first', true); return;
     }
-    if (!fxTimerReady) {
+    if (needsTimer && !fxTimerReady) {
       showToast('Select a timer first', true); return;
     }
     const isActive = btn.classList.contains('active');
     document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
     if (isActive) {
       activeEffect = null;
+      if (micRafId) { clearInterval(micRafId); micRafId = null; }
+      if (micAudioCtx) { micAudioCtx.close(); micAudioCtx = null; }
+      if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
       await api('/api/power', { state: 'on' }); // stopEffect() is called server-side
       showToast('Effect stopped');
       return;
     }
     btn.classList.add('active');
     activeEffect = effectId;
+    if (effectId === 'dance') {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Got mic stream', micStream);
+        micAudioCtx = new AudioContext();
+        const source   = micAudioCtx.createMediaStreamSource(micStream);
+        const analyser = micAudioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        const buf = new Float32Array(analyser.fftSize);
+        micRafId = setInterval(() => {
+          analyser.getFloatTimeDomainData(buf);
+          let sum = 0;
+          for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+          const rms = Math.sqrt(sum / buf.length);
+          console.log('mic volume (RMS):', rms.toFixed(4));
+          fetch('/api/dance/input', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target: currentTarget, volume: rms }),
+          }).catch(() => {});
+        }, 100);
+      } catch (err) {
+        showToast('Microphone access denied', true);
+        btn.classList.remove('active');
+        activeEffect = null;
+        return;
+      }
+    }
     const body = { effect: effectId };
     if (effectId === 'fade') {
       const { r, g, b } = hexToRgb(fxColor);
@@ -648,6 +684,9 @@
     }
     await api('/api/effect', body);
     showToast(`Effect: ${btn.textContent}`);
+
+    // Dance runs until the button is clicked again — no timer
+    if (effectId === 'dance') return;
 
     // Start countdown on the active timer button
     const timerBtn = document.querySelector('.timer-btn.active');
@@ -669,6 +708,9 @@
       });
       document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
       activeEffect = null;
+      if (micRafId) { clearInterval(micRafId); micRafId = null; }
+      if (micAudioCtx) { micAudioCtx.close(); micAudioCtx = null; }
+      if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
       await api('/api/power', { state: 'on' }); // stopEffect server-side, leave lights on
       showToast('Effect stopped');
     }, activeTimer * 1000);

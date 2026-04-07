@@ -23,8 +23,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let ready        = false;
-let activeEffect = null;
+let ready           = false;
+let activeEffect    = null;
+let danceMicVolume  = 0;
 
 // ─── Static colour presets ────────────────────────────────────────────────────
 
@@ -68,7 +69,7 @@ async function applyBrightness(target, value) {
   await Promise.all(tasks);
 }
 
-// HSL → RGB (for color-cycle effect)
+// HSL → RGB (for dance effect)
 function hslToRgb(h, s, l) {
   const hue2rgb = (p, q, t) => {
     if (t < 0) t += 1; if (t > 1) t -= 1;
@@ -89,6 +90,12 @@ function hslToRgb(h, s, l) {
 // ─── API routes ───────────────────────────────────────────────────────────────
 
 app.get('/api/status', (_req, res) => res.json({ ready }));
+
+app.post('/api/dance/input', (req, res) => {
+  const { volume } = req.body;
+  if (typeof volume === 'number' && isFinite(volume)) danceMicVolume = volume;
+  res.json({ ok: true });
+});
 
 app.post('/api/power', async (req, res) => {
   stopEffect();
@@ -156,15 +163,24 @@ app.post('/api/effect', async (req, res) => {
       return res.json({ ok: true });
     }
 
-    if (effect === 'color-cycle') {
+    if (effect === 'dance') {
       await applyPower(target, true);
-      await applyBrightness(target, 80);
+      await applyBrightness(target, 20);
+      danceMicVolume = 0;
       let hue = 0;
       activeEffect = setInterval(async () => {
-        hue = (hue + 2) % 360;
+        const vol  = danceMicVolume;
+        const bri  = Math.min(100, Math.max(5, Math.round(vol * 700)));
+        const step = Math.max(2, Math.round(vol * 300));
+        hue = (hue + step) % 360;
         const [r, g, b] = hslToRgb(hue / 360, 1, 0.5);
-        await applyColor(target, r, g, b).catch(() => {});
-      }, 80);
+        // Send color to all targets; only send brightness to Hue (Govee rate-limit: 1 cmd/200ms)
+        const tasks = [ applyColor(target, r, g, b) ];
+        if (target === 'hue' || target === 'both') {
+          tasks.push(controller.setHueBrightness(bri));
+        }
+        await Promise.all(tasks).catch(() => {});
+      }, 200);
       return res.json({ ok: true });
     }
 
