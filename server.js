@@ -159,7 +159,7 @@ app.post('/api/effect', async (req, res) => {
         if (bri >= 100) { bri = 100; dir = -1; }
         if (bri <= 10)  { bri = 10;  dir =  1; }
         await applyBrightness(target, bri).catch(() => {});
-      }, 100);
+      }, 10);
       return res.json({ ok: true });
     }
 
@@ -168,17 +168,11 @@ app.post('/api/effect', async (req, res) => {
       await controller.goveeOn();
       await controller.setGoveeColor(r, g, b);
       await controller.setGoveeBrightness(5);
-      danceMicVolume = 0;
-      let envelope = 0;
+
       activeEffect = setInterval(async () => {
-        const NOISE = 0.003;
-        const vol = Math.max(0, danceMicVolume - NOISE);
-        const raw = Math.min(1, Math.pow(vol, 0.65) * 4);
-        // Fast attack (instant), slow decay (~500ms to fall)
-        envelope = raw > envelope ? raw : envelope * 0.5;
-        const bri = Math.min(100, Math.max(3, Math.round(envelope * 100)));
-        await controller.setGoveeBrightness(bri).catch(() => {});
-      }, 100);
+       console.log(`Dance effect — mic volume: ${danceMicVolume}`);
+       await controller.setGoveeBrightness(danceMicVolume * 1000).catch(() => {});
+      }, 10);
       return res.json({ ok: true });
     }
 
