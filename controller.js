@@ -274,5 +274,7 @@ if (require.main === module) {
     // Per-system
     hueOn, hueOff, setHueColor, setHueBrightness,
     goveeOn, goveeOff, setGoveeColor, setGoveeBrightness,
+    // Raw access for dance effect
+    getGoveeDevices: () => goveeDevices,
   };
 }

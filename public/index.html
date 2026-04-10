@@ -659,17 +659,18 @@
         const analyser = micAudioCtx.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
-        const buf = new Float32Array(analyser.fftSize);
+        const buf = new Uint8Array(analyser.frequencyBinCount);
         micSocket = new WebSocket(`ws://${location.host}`);
         micRafId = setInterval(() => {
-          analyser.getFloatTimeDomainData(buf);
-          let sum = 0;
-          for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
-          const rms = Math.sqrt(sum / buf.length);
+          analyser.getByteFrequencyData(buf);
+          // Peak of bass bins (first 10 bins) — reacts faster than averaging
+          let peak = 0;
+          for (let i = 0; i < 10; i++) { if (buf[i] > peak) peak = buf[i]; }
+          const volume = peak / 255;
           if (micSocket && micSocket.readyState === WebSocket.OPEN) {
-            micSocket.send(JSON.stringify({ volume: rms }));
+            micSocket.send(JSON.stringify({ volume }));
           }
-        }, 100);
+        }, 30);
       } catch (err) {
         showToast('Microphone access denied', true);
         btn.classList.remove('active');

@@ -174,12 +174,53 @@ app.post('/api/effect', async (req, res) => {
       const { r = 255, g = 255, b = 255 } = req.body;
       await controller.goveeOn();
       await controller.setGoveeColor(r, g, b);
-      await controller.setGoveeBrightness(5);
+      await controller.setGoveeBrightness(100);
 
-      activeEffect = setInterval(async () => {
-       console.log(`Dance effect — mic volume: ${danceMicVolume}`);
-       await controller.setGoveeBrightness(danceMicVolume * 80).catch(() => {});
-      }, 100);
+      // Grab the library's own devices — they already have bound+connected sockets
+      const devices = controller.getGoveeDevices();
+      console.log(`Dance: ${devices.length} device(s)`);
+      for (const d of devices) {
+        console.log(`  ${d.ip} — socket: ${!!d.socket}, type: ${d.socket?.constructor?.name}`);
+      }
+
+      function rawBrightness(bri) {
+        const msg = JSON.stringify({ msg: { cmd: 'brightness', data: { value: bri } } });
+        const buf = Buffer.from(msg);
+        for (const d of devices) {
+          if (d.socket) {
+            d.socket.send(buf, 0, buf.length, 4003, d.ip, (err) => {
+              if (err) console.error(`  UDP send err [${d.ip}]:`, err.message);
+            });
+          } else {
+            console.warn(`  No socket for ${d.ip}`);
+          }
+        }
+      }
+
+      let lastBri = 100;
+      let volMin = 1, volMax = 0;
+      const DECAY_UP   = 0.97;  // max rises slowly
+      const DECAY_DOWN = 0.85;  // min drops fast — quick reaction to quiet
+
+      activeEffect = setInterval(() => {
+        const vol = danceMicVolume;
+
+        // Adaptive range tracking
+        if (vol < volMin) volMin = vol;
+        if (vol > volMax) volMax = vol;
+        volMin = volMin * DECAY_DOWN + vol * (1 - DECAY_DOWN);
+        volMax = volMax * DECAY_UP   + vol * (1 - DECAY_UP);
+
+        const range = volMax - volMin;
+        const norm = range > 0.01 ? (vol - volMin) / range : 0;
+        const bri = Math.max(5, Math.min(100, Math.round(norm * 100)));
+
+        if (bri === lastBri) return;
+        console.log(`Dance — vol: ${vol.toFixed(3)} bri: ${bri}%`);
+        rawBrightness(bri);
+        lastBri = bri;
+      }, 80);
+
       return res.json({ ok: true });
     }
 
