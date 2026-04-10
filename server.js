@@ -11,14 +11,18 @@
 
 'use strict';
 
-const http       = require('http');
+const https      = require('https');
+const fs         = require('fs');
 const express    = require('express');
 const path       = require('path');
 const { WebSocketServer } = require('ws');
 const controller = require('./controller');
 
 const app    = express();
-const server = http.createServer(app);
+const server = https.createServer({
+  key:  fs.readFileSync(path.join(__dirname, 'key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert.pem')),
+}, app);
 const wss    = new WebSocketServer({ server });
 const PORT   = 3000;
 
