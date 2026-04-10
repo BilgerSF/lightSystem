@@ -666,7 +666,6 @@
           let sum = 0;
           for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
           const rms = Math.sqrt(sum / buf.length);
-          console.log('mic volume (RMS):', rms.toFixed(4));
           if (micSocket && micSocket.readyState === WebSocket.OPEN) {
             micSocket.send(JSON.stringify({ volume: rms }));
           }
