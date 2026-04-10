@@ -492,6 +492,7 @@
   let micStream      = null;
   let micAudioCtx    = null;
   let micRafId       = null;  // holds setInterval id for mic polling
+  let micSocket      = null;  // WebSocket for dance mic volume
 
   // 10 swatches: 5 columns × 2 rows
   const SWATCHES = [
@@ -642,6 +643,7 @@
       if (micRafId) { clearInterval(micRafId); micRafId = null; }
       if (micAudioCtx) { micAudioCtx.close(); micAudioCtx = null; }
       if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+      if (micSocket) { micSocket.close(); micSocket = null; }
       await api('/api/power', { state: 'on' }); // stopEffect() is called server-side
       showToast('Effect stopped');
       return;
@@ -658,22 +660,22 @@
         analyser.fftSize = 256;
         source.connect(analyser);
         const buf = new Float32Array(analyser.fftSize);
+        micSocket = new WebSocket(`ws://${location.host}`);
         micRafId = setInterval(() => {
           analyser.getFloatTimeDomainData(buf);
           let sum = 0;
           for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
           const rms = Math.sqrt(sum / buf.length);
           console.log('mic volume (RMS):', rms.toFixed(4));
-          fetch('/api/dance/input', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ target: currentTarget, volume: rms }),
-          }).catch(() => {});
+          if (micSocket && micSocket.readyState === WebSocket.OPEN) {
+            micSocket.send(JSON.stringify({ volume: rms }));
+          }
         }, 100);
       } catch (err) {
         showToast('Microphone access denied', true);
         btn.classList.remove('active');
         activeEffect = null;
+        if (micSocket) { micSocket.close(); micSocket = null; }
         return;
       }
     }
@@ -714,6 +716,7 @@
       if (micRafId) { clearInterval(micRafId); micRafId = null; }
       if (micAudioCtx) { micAudioCtx.close(); micAudioCtx = null; }
       if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+      if (micSocket) { micSocket.close(); micSocket = null; }
       await api('/api/power', { state: 'on' }); // stopEffect server-side, leave lights on
       showToast('Effect stopped');
     }, activeTimer * 1000);

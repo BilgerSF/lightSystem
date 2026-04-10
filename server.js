@@ -11,12 +11,16 @@
 
 'use strict';
 
+const http       = require('http');
 const express    = require('express');
 const path       = require('path');
+const { WebSocketServer } = require('ws');
 const controller = require('./controller');
 
-const app  = express();
-const PORT = 3000;
+const app    = express();
+const server = http.createServer(app);
+const wss    = new WebSocketServer({ server });
+const PORT   = 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -91,10 +95,13 @@ function hslToRgb(h, s, l) {
 
 app.get('/api/status', (_req, res) => res.json({ ready }));
 
-app.post('/api/dance/input', (req, res) => {
-  const { volume } = req.body;
-  if (typeof volume === 'number' && isFinite(volume)) danceMicVolume = volume;
-  res.json({ ok: true });
+wss.on('connection', (ws) => {
+  ws.on('message', (raw) => {
+    try {
+      const { volume } = JSON.parse(raw);
+      if (typeof volume === 'number' && isFinite(volume)) danceMicVolume = volume;
+    } catch { /* ignore malformed frames */ }
+  });
 });
 
 app.post('/api/power', async (req, res) => {
@@ -216,7 +223,7 @@ app.post('/api/effect', async (req, res) => {
     console.error('Init failed — dashboard will still open but lights may not respond:', e.message);
   }
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`\n✔ Dashboard →  http://localhost:${PORT}\n`);
   });
 })();
