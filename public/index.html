@@ -487,7 +487,8 @@
 
   let currentTarget  = 'both';
   let activeEffect   = null;
-  let lightsOn       = false;
+  const powerState  = { hue: false, govee: false };
+  let lightsOn       = false; // derived — reflects current target
   let currentBri     = 80;
   let activeTimer       = null;
   let timerInterval     = null;
@@ -537,6 +538,13 @@
     document.querySelectorAll('.target-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.target === target);
     });
+    // Reflect this target's power state on the indicator
+    if (target === 'both') {
+      lightsOn = powerState.hue || powerState.govee;
+    } else {
+      lightsOn = powerState[target];
+    }
+    document.getElementById('powerIndicator').classList.toggle('on', lightsOn);
   }
 
   // ── API helpers ─────────────────────────────────────────────────────────────
@@ -561,6 +569,13 @@
 
   async function togglePower() {
     lightsOn = !lightsOn;
+    // Persist state per target
+    if (currentTarget === 'both') {
+      powerState.hue   = lightsOn;
+      powerState.govee = lightsOn;
+    } else {
+      powerState[currentTarget] = lightsOn;
+    }
     document.getElementById('powerIndicator').classList.toggle('on', lightsOn);
     await api('/api/power', { state: lightsOn ? 'on' : 'off' });
     showToast(lightsOn ? 'Lights ON' : 'Lights OFF');
