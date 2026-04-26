@@ -148,13 +148,13 @@ app.post('/api/effect', async (req, res) => {
       const { r = 255, g = 255, b = 255 } = req.body;
       await applyPower(target, true);
       await applyColor(target, r, g, b);
-      let bri = 10, dir = 1;
+      let bri = 2, dir = 1;
       activeEffect = setInterval(async () => {
-        bri += dir * 10;
+        bri += dir * 20;
         if (bri >= 100) { bri = 100; dir = -1; }
-        if (bri <= 10)  { bri = 10;  dir =  1; }
+        if (bri <= 2)   { bri = 2;   dir =  1; }
         await applyBrightness(target, bri).catch(() => {});
-      }, 50);
+      }, 100);
       return res.json({ ok: true });
     }
 
