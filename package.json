@@ -2,20 +2,35 @@
   "name": "lightsystem",
   "version": "1.0.0",
   "description": "",
-  "main": "test.js",
+  "main": "server.js",
+  "bin": "server.js",
   "scripts": {
     "start": "node server.js",
+    "build:exe": "pkg . --targets node18-win-x64 --output dist/lightsystem.exe",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "config.json"
+    ],
+    "scripts": [
+      "controller.js",
+      "server.js"
+    ]
+  },
   "dependencies": {
     "express": "^5.2.1",
     "govee-lan-control": "^3.0.2",
     "node-hue-api": "^5.0.0-beta.16",
     "nodemon": "^3.1.14",
     "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }
