@@ -11,6 +11,7 @@
 
 'use strict';
 
+const { exec } = require('child_process');
 const http       = require('http');
 const express    = require('express');
 const path       = require('path');
@@ -265,6 +266,12 @@ app.post('/api/effect', async (req, res) => {
   }
 
   server.listen(PORT, () => {
-    console.log(`\n✔ Dashboard →  http://localhost:${PORT}\n`);
+    const url = `http://localhost:${PORT}`;
+    console.log(`\n✔ Dashboard →  ${url}\n`);
+    exec(`start "" "${url}"`, (err) => {
+      if (err) {
+        console.error('Failed to launch browser:', err.message);
+      }
+    });
   });
 })();
