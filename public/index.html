@@ -318,6 +318,39 @@
       transform: translateY(1px);
       background: #6a2828;
     }
+    .update-btn {
+      position: absolute;
+      right: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--btn);
+      border: none;
+      border-radius: 40px;
+      padding: 8px 16px;
+      cursor: pointer;
+      box-shadow:
+        3px 3px 6px rgba(0,0,0,0.22),
+        -1px -1px 4px rgba(255,255,255,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.28);
+      transition: all var(--transition);
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .update-btn:hover { background: var(--btn-hi); }
+    .update-btn:active {
+      box-shadow:
+        1px 1px 2px rgba(0,0,0,0.18),
+        inset 2px 2px 5px rgba(0,0,0,0.18),
+        inset -1px -1px 2px rgba(255,255,255,0.28);
+      transform: translateY(1px);
+      background: #9e9288;
+    }
+    .update-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
     .blackout-icon {
       width: 32px; height: 32px;
       border-radius: 50%;
@@ -528,6 +561,7 @@
       <span class="power-label">ON / OFF</span>
       <div class="power-indicator" id="powerIndicator"></div>
     </button>
+    <button class="update-btn" id="updateBtn" onclick="pullUpdate()">↓ Update</button>
   </div>
 
 </div>
@@ -816,6 +850,25 @@
       await api('/api/power', { state: 'on', target: 'govee' }); // stopEffect server-side, leave lights on
       showToast('Effect stopped');
     }, activeTimer * 1000);
+  }
+
+  // ── Update ───────────────────────────────────────────────────────────────────
+
+  async function pullUpdate() {
+    const btn = document.getElementById('updateBtn');
+    btn.disabled = true;
+    btn.textContent = '↓ Pulling…';
+    try {
+      const res = await fetch('/api/update', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      showToast(data.message || 'Updated!');
+    } catch (e) {
+      showToast(e.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '↓ Update';
+    }
   }
 
   // ── Toast ────────────────────────────────────────────────────────────────────

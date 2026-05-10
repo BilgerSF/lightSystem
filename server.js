@@ -253,6 +253,13 @@ app.post('/api/effect', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/api/update', (req, res) => {
+  exec('git pull origin main', { cwd: __dirname }, (err, stdout, stderr) => {
+    if (err) return res.status(500).json({ error: stderr.trim() || err.message });
+    res.json({ ok: true, message: stdout.trim() || 'Already up to date.' });
+  });
+});
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 (async () => {
