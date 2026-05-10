@@ -855,11 +855,17 @@
   // ── Update ───────────────────────────────────────────────────────────────────
 
   async function pullUpdate() {
+    const password = window.prompt('Enter update password:');
+    if (password === null) return; // cancelled
     const btn = document.getElementById('updateBtn');
     btn.disabled = true;
     btn.textContent = '↓ Pulling…';
     try {
-      const res = await fetch('/api/update', { method: 'POST' });
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
       showToast(data.message || 'Updated!');

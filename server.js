@@ -12,6 +12,7 @@
 'use strict';
 
 const { exec } = require('child_process');
+const crypto     = require('crypto');
 const http       = require('http');
 const express    = require('express');
 const path       = require('path');
@@ -253,7 +254,15 @@ app.post('/api/effect', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+const UPDATE_PASSWORD_HASH = 'd102a5e24978f472c57411fb2d5a04a7e23451955316112d8276637bda628eb0'; // sha256 of update password
+
 app.post('/api/update', (req, res) => {
+  const { password } = req.body || {};
+  if (typeof password !== 'string') return res.status(401).json({ error: 'Password required.' });
+  const hash = crypto.createHash('sha256').update(password).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(UPDATE_PASSWORD_HASH))) {
+    return res.status(401).json({ error: 'Incorrect password.' });
+  }
   exec('git pull origin main', { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) return res.status(500).json({ error: stderr.trim() || err.message });
     res.json({ ok: true, message: stdout.trim() || 'Already up to date.' });
