@@ -286,7 +286,55 @@
     .power-row {
       display: flex;
       justify-content: center;
+      align-items: center;
       padding: 4px 0 2px;
+      position: relative;
+    }
+    .blackout-btn {
+      position: absolute;
+      left: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #7a3030;
+      border: none;
+      border-radius: 40px;
+      padding: 11px 24px;
+      cursor: pointer;
+      box-shadow:
+        3px 3px 6px rgba(0,0,0,0.30),
+        -1px -1px 4px rgba(255,255,255,0.18),
+        inset 0 1px 0 rgba(255,255,255,0.14);
+      transition: all var(--transition);
+      min-width: 160px;
+      justify-content: space-between;
+    }
+    .blackout-btn:hover { background: #943838; }
+    .blackout-btn:active {
+      box-shadow:
+        1px 1px 2px rgba(0,0,0,0.22),
+        inset 2px 2px 5px rgba(0,0,0,0.28),
+        inset -1px -1px 2px rgba(255,255,255,0.12);
+      transform: translateY(1px);
+      background: #6a2828;
+    }
+    .blackout-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .blackout-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #e8c0c0;
+      flex: 1;
+      text-align: center;
     }
     .power-toggle {
       display: flex;
@@ -471,6 +519,10 @@
 
   <!-- Power toggle -->
   <div class="power-row">
+    <button class="blackout-btn" onclick="blackOut()">
+      <div class="blackout-icon">⬛</div>
+      <span class="blackout-label">Black Out</span>
+    </button>
     <button class="power-toggle" onclick="togglePower()">
       <div class="power-icon">⏻</div>
       <span class="power-label">ON / OFF</span>
@@ -566,6 +618,29 @@
   }
 
   // ── Power ───────────────────────────────────────────────────────────────────
+
+  function stopAllEffects() {
+    document.querySelectorAll('.fx-btn').forEach(b => b.classList.remove('active'));
+    clearTimeout(timerInterval);
+    clearInterval(countdownInterval);
+    timerInterval     = null;
+    countdownInterval = null;
+    activeEffect      = null;
+    if (micRafId)   { clearInterval(micRafId); micRafId = null; }
+    if (micAudioCtx){ micAudioCtx.close(); micAudioCtx = null; }
+    if (micStream)  { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    if (micSocket)  { micSocket.close(); micSocket = null; }
+  }
+
+  async function blackOut() {
+    stopAllEffects();
+    powerState.hue   = false;
+    powerState.govee = false;
+    lightsOn = false;
+    document.getElementById('powerIndicator').classList.remove('on');
+    await api('/api/power', { target: 'both', state: 'off' });
+    showToast('All lights OFF');
+  }
 
   async function togglePower() {
     lightsOn = !lightsOn;
