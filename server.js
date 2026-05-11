@@ -13,6 +13,8 @@
 
 const { exec } = require('child_process');
 const crypto     = require('crypto');
+const fs         = require('fs');
+const os         = require('os');
 const http       = require('http');
 const express    = require('express');
 const path       = require('path');
@@ -268,9 +270,14 @@ app.post('/api/update', (req, res) => {
 
     exec('npm run build:exe', { cwd: __dirname }, (err2, stdout2, stderr2) => {
       if (err2) return res.status(500).json({ error: stderr2.trim() || err2.message });
-      const pullMsg  = stdout.trim()  || 'Already up to date.';
-      const buildMsg = stdout2.trim() || 'Build complete.';
-      res.json({ ok: true, message: `${pullMsg}\n${buildMsg}` });
+      const src  = path.join(__dirname, 'dist', 'lightsystem.exe');
+      const dest = path.join(os.homedir(), 'Desktop', 'lightsystem.exe');
+      fs.copyFile(src, dest, (err3) => {
+        const pullMsg  = stdout.trim()  || 'Already up to date.';
+        const buildMsg = stdout2.trim() || 'Build complete.';
+        const copyMsg  = err3 ? `Warning: could not copy to Desktop — ${err3.message}` : 'Copied to Desktop.';
+        res.json({ ok: true, message: `${pullMsg}\n${buildMsg}\n${copyMsg}` });
+      });
     });
   });
 });
