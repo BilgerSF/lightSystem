@@ -265,7 +265,13 @@ app.post('/api/update', (req, res) => {
   }
   exec('git pull origin main', { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) return res.status(500).json({ error: stderr.trim() || err.message });
-    res.json({ ok: true, message: stdout.trim() || 'Already up to date.' });
+
+    exec('npm run build:exe', { cwd: __dirname }, (err2, stdout2, stderr2) => {
+      if (err2) return res.status(500).json({ error: stderr2.trim() || err2.message });
+      const pullMsg  = stdout.trim()  || 'Already up to date.';
+      const buildMsg = stdout2.trim() || 'Build complete.';
+      res.json({ ok: true, message: `${pullMsg}\n${buildMsg}` });
+    });
   });
 });
 
