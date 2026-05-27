@@ -180,27 +180,6 @@ app.post('/api/effect', async (req, res) => {
       await controller.setGoveeColor(r, g, b);
       await controller.setGoveeBrightness(100);
 
-      // Grab the library's own devices — they already have bound+connected sockets
-      const devices = controller.getGoveeDevices();
-      console.log(`Dance: ${devices.length} device(s)`);
-      for (const d of devices) {
-        console.log(`  ${d.ip} — socket: ${!!d.socket}, type: ${d.socket?.constructor?.name}`);
-      }
-
-      function rawBrightness(bri) {
-        const msg = JSON.stringify({ msg: { cmd: 'brightness', data: { value: bri } } });
-        const buf = Buffer.from(msg);
-        for (const d of devices) {
-          if (d.socket) {
-            d.socket.send(buf, 0, buf.length, 4003, d.ip, (err) => {
-              if (err) console.error(`  UDP send err [${d.ip}]:`, err.message);
-            });
-          } else {
-            console.warn(`  No socket for ${d.ip}`);
-          }
-        }
-      }
-
       let lastBri = 100;
       let volMin = 1, volMax = 0;
       const DECAY_UP   = 0.97;  // max rises slowly
@@ -221,7 +200,8 @@ app.post('/api/effect', async (req, res) => {
 
         if (bri === lastBri) return;
         console.log(`Dance — vol: ${vol.toFixed(3)} bri: ${bri}%`);
-        rawBrightness(bri);
+        // Fire-and-forget via Python bridge (no socket overhead in Node)
+        controller.setGoveeBrightnessRaw(bri);
         lastBri = bri;
       }, 80);
 
