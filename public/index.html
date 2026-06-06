@@ -544,7 +544,7 @@
           <button class="btn fx-btn" data-id="rainbow"     onclick="applyFx('rainbow', this)">RAINBOW</button>
           <button class="btn fx-btn fx-disabled" disabled>FX6</button>
           <button class="btn fx-btn" data-id="seg-alt"     onclick="applyFx('seg-alt', this)">SEG ALT</button>
-          <button class="btn fx-btn fx-disabled" disabled>FX9</button>
+          <button class="btn fx-btn" data-id="seg-chase"   onclick="applyFx('seg-chase', this)">SEG CHASE</button>
         </div>
 
       </div>
@@ -759,7 +759,7 @@
 
   async function applyFx(effectId, btn) {
     const needsTimer = effectId !== 'dance';
-    const needsColor = !['rainbow', 'seg-rainbow', 'seg-alt'].includes(effectId);
+    const needsColor = !['rainbow', 'seg-rainbow', 'seg-alt', 'seg-chase'].includes(effectId);
     if (!fxColorReady && needsColor && (needsTimer && !fxTimerReady)) {
       showToast('Select a color and a timer first', true); return;
     }
