@@ -22,14 +22,16 @@ const fs   = require('fs');
 const path = require('path');
 const { discovery, api: hueApiFactory, model } = require('node-hue-api');
 const LightState = model.lightStates.LightState;
-const goveeBridge = require('./govee_client');
+const GoveeClient = require('govee-lan-control').default;
 
 const CONFIG_PATH = path.join(__dirname, 'config.json');
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let hueApi    = null;   // authenticated node-hue-api instance
-let hueLights = [];     // all lights on the bridge
+let hueApi      = null;   // authenticated node-hue-api instance
+let hueLights   = [];     // all lights on the bridge
+let goveeClient  = null;  // govee-lan-control Client
+let goveeDevices = [];     // all selected Govee devices
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -84,10 +86,18 @@ async function hueSetAll(state) {
   ));
 }
 
+// ─── Govee helpers ───────────────────────────────────────────────────────────
+
+async function goveeAll(fn) {
+  await Promise.all(goveeDevices.map(d => Promise.resolve(fn(d)).catch(err =>
+    console.warn(`  Govee [${d.ip}] error:`, err.message)
+  )));
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * init() — connect to Hue bridge and start Govee Python bridge.
+ * init() — connect to Hue bridge and discover Govee strip.
  * Must be called before any other function.
  */
 async function init() {
@@ -100,11 +110,32 @@ async function init() {
   hueLights = allLights;
   console.log(`✔ Hue connected — ${hueLights.length} light(s) found: ${hueLights.map(l => l.name).join(', ')}`);
 
-  // ── Govee (Python bridge) ──
-  const ips = config.govee.deviceIps;
-  console.log(`Starting Govee Python bridge for ${ips.length} device(s)…`);
-  await goveeBridge.init(ips);
-  console.log(`✔ Govee bridge ready — ${ips.length} device(s): ${ips.join(', ')}`);
+  // ── Govee ──
+  const targetIps = new Set(config.govee.deviceIps);
+  console.log(`Connecting to ${targetIps.size} Govee device(s)…`);
+  goveeClient = new GoveeClient();
+
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      if (goveeDevices.length) resolve(); // accept partial
+      else reject(new Error(
+        'No Govee devices found. Check LAN Control is enabled and devices are on the same network.'
+      ));
+    }, 12000);
+
+    goveeClient.on('deviceAdded', device => {
+      if (targetIps.has(device.ip) && !goveeDevices.find(d => d.ip === device.ip)) {
+        goveeDevices.push(device);
+        console.log(`  ✔ ${device.model} at ${device.ip}`);
+        if (goveeDevices.length === targetIps.size) {
+          clearTimeout(timeout);
+          resolve();
+        }
+      }
+    });
+  });
+
+  console.log(`✔ Govee ready — ${goveeDevices.length}/${targetIps.size} device(s) connected.`);
 }
 
 /**
@@ -115,7 +146,7 @@ async function turnOn() {
   const hueState = new LightState().on();
   await Promise.all([
     hueSetAll(hueState),
-    goveeBridge.turnOn(),
+    goveeAll(d => d.actions.setOn()),
   ]);
 }
 
@@ -127,7 +158,7 @@ async function turnOff() {
   const hueState = new LightState().off();
   await Promise.all([
     hueSetAll(hueState),
-    goveeBridge.turnOff(),
+    goveeAll(d => d.actions.setOff()),
   ]);
 }
 
@@ -143,7 +174,7 @@ async function setColor(r, g, b) {
   const hueState = new LightState().on().xy(x, y);
   await Promise.all([
     hueSetAll(hueState),
-    goveeBridge.setColor(r, g, b),
+    goveeAll(d => d.actions.setColor({ rgb: [r, g, b] })),
   ]);
 }
 
@@ -154,10 +185,11 @@ async function setColor(r, g, b) {
 async function setBrightness(percent) {
   const pct = Math.max(1, Math.min(100, percent));
   console.log(`Setting brightness → ${pct}%`);
+  // Both Hue (new model API) and Govee accept 0-100 percentage
   const hueState = new LightState().on().brightness(pct);
   await Promise.all([
     hueSetAll(hueState),
-    goveeBridge.setBrightness(pct),
+    goveeAll(d => d.actions.setBrightness(pct)),
   ]);
 }
 
@@ -224,19 +256,13 @@ async function setHueBrightness(pct) {
   await hueSetAll(new LightState().on().brightness(Math.max(1, Math.min(100, pct))));
 }
 
-async function goveeOn()              { return goveeBridge.turnOn(); }
-async function goveeOff()             { return goveeBridge.turnOff(); }
-async function setGoveeColor(r, g, b) { return goveeBridge.setColor(r, g, b); }
-async function setGoveeBrightness(pct) {
-  return goveeBridge.setBrightness(Math.max(1, Math.min(100, pct)));
+async function goveeOn()  { await goveeAll(d => d.actions.setOn()); }
+async function goveeOff() { await goveeAll(d => d.actions.setOff()); }
+async function setGoveeColor(r, g, b) {
+  await goveeAll(d => d.actions.setColor({ rgb: [r, g, b] }));
 }
-
-/**
- * setGoveeBrightnessRaw(pct) — fire-and-forget brightness used by the
- * dance effect's 80 ms interval.  Does not await a response from Python.
- */
-function setGoveeBrightnessRaw(pct) {
-  goveeBridge.brightnessRaw(Math.max(1, Math.min(100, pct)));
+async function setGoveeBrightness(pct) {
+  await goveeAll(d => d.actions.setBrightness(Math.max(1, Math.min(100, pct))));
 }
 
 // Run demo when executed directly; export API for external use
@@ -248,7 +274,7 @@ if (require.main === module) {
     // Per-system
     hueOn, hueOff, setHueColor, setHueBrightness,
     goveeOn, goveeOff, setGoveeColor, setGoveeBrightness,
-    // Fire-and-forget brightness for dance effect
-    setGoveeBrightnessRaw,
+    // Raw access for dance effect
+    getGoveeDevices: () => goveeDevices,
   };
 }
