@@ -19,6 +19,7 @@ const http       = require('http');
 const express    = require('express');
 const path       = require('path');
 const { WebSocketServer } = require('ws');
+const dgram      = require('dgram');
 const controller = require('./controller');
 
 const app    = express();
@@ -93,6 +94,48 @@ function hslToRgb(h, s, l) {
     Math.round(hue2rgb(p, q, h)       * 255),
     Math.round(hue2rgb(p, q, h - 1/3) * 255),
   ];
+}
+
+// HSV → RGB (for rainbow effect)
+function hsvToRgb(h, s, v) {
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  let r, g, b;
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+// ─── ptReal segment helpers ──────────────────────────────────────────────────
+// Port of make_ptreal_packet / send_ptreal from govee_segment_test.py
+
+function makePtrealPacket(seg, r, g, b) {
+  const buf = Buffer.alloc(19);
+  buf[0] = 0x33; buf[1] = 0x05; buf[2] = 0x15; buf[3] = 0x01;
+  buf[4] = r; buf[5] = g; buf[6] = b;
+  // bytes 7-11 stay 0x00 (pre-zeroed)
+  // bytes 12-18: 7-byte little-endian bitmask — bit N = segment N
+  let mask = BigInt(1) << BigInt(seg);
+  for (let i = 0; i < 7; i++) { buf[12 + i] = Number(mask & 0xFFn); mask >>= 8n; }
+  let chk = 0;
+  for (const byte of buf) chk ^= byte;
+  return Buffer.concat([buf, Buffer.from([chk])]).toString('base64');
+}
+
+function sendPtreal(ip, seg, r, g, b) {
+  const pkt = makePtrealPacket(seg, r, g, b);
+  const msg = Buffer.from(JSON.stringify({ msg: { cmd: 'ptReal', data: { command: [pkt] } } }));
+  const sock = dgram.createSocket('udp4');
+  sock.send(msg, 4003, ip, () => sock.close());
 }
 
 // ─── API routes ───────────────────────────────────────────────────────────────
@@ -251,6 +294,47 @@ app.post('/api/effect', async (req, res) => {
         });
         activeIdx = (activeIdx + 1) % n;
       }, 120);
+      return res.json({ ok: true });
+    }
+
+    if (effect === 'rainbow') {
+      const devices = controller.getGoveeDevices();
+      if (!devices.length) return res.status(500).json({ error: 'No Govee devices found.' });
+      await controller.goveeOn();
+      const n = devices.length;
+      let offset = 0;
+      activeEffect = setInterval(() => {
+        devices.forEach((d, idx) => {
+          const [r, g, b] = hsvToRgb((idx / n + offset) % 1, 1, 1);
+          d.actions.setColor({ rgb: [r, g, b] }).catch(() => {});
+        });
+        offset = (offset + 1 / 60) % 1;
+      }, 80);
+      return res.json({ ok: true });
+    }
+
+    if (effect === 'seg-alt') {
+      // Chasing strobe: one lit segment sweeps across the strip;
+      // the active color alternates between Red and Blue each full pass.
+      const devices = controller.getGoveeDevices();
+      if (!devices.length) return res.status(500).json({ error: 'No Govee devices found.' });
+      await controller.goveeOn();
+      const ips = devices.map(d => d.ip);
+      const MAX_SEGS = 15;
+      let segIdx = 0, pass = 0;
+      // Two trailing dim segments give a comet tail effect
+      const DIM  = [8, 8, 8];
+      const COLORS = [[255, 0, 0], [0, 0, 255]];
+      activeEffect = setInterval(() => {
+        const [r, g, b] = COLORS[pass % 2];
+        // Bright active segment
+        for (const ip of ips) sendPtreal(ip, segIdx, r, g, b);
+        // Dim the segment two steps behind (tail)
+        const tail = (segIdx - 2 + MAX_SEGS) % MAX_SEGS;
+        for (const ip of ips) sendPtreal(ip, tail, ...DIM);
+        segIdx++;
+        if (segIdx >= MAX_SEGS) { segIdx = 0; pass++; }
+      }, 50);
       return res.json({ ok: true });
     }
 
