@@ -317,6 +317,63 @@ app.post('/api/effect', async (req, res) => {
       return res.json({ ok: true });
     }
 
+    if (effect === 'seg-dance') {
+      // VU meter: mic volume drives how many segments are lit (0–15).
+      // Only sends diffs — segments that change state — to stay under rate limit.
+      const devices = controller.getGoveeDevices();
+      if (!devices.length) return res.status(500).json({ error: 'No Govee devices found.' });
+      const ips = devices.map(d => d.ip);
+      const MAX_SEGS = 15;
+      const sendTurn = (ip, on) => {
+        const msg = Buffer.from(JSON.stringify({ msg: { cmd: 'turn', data: { value: on ? 1 : 0 } } }));
+        const sock = dgram.createSocket('udp4');
+        sock.send(msg, 4003, ip, () => sock.close());
+      };
+      const myGen = ++segSetupGen;
+      res.json({ ok: true });
+      (async () => {
+        if (!inSegmentMode) {
+          for (const ip of ips) sendTurn(ip, false);
+          await new Promise(r => setTimeout(r, 400));
+          if (segSetupGen !== myGen) return;
+          for (const ip of ips) sendTurn(ip, true);
+          await new Promise(r => setTimeout(r, 800));
+          if (segSetupGen !== myGen) return;
+          for (let s = 0; s < MAX_SEGS; s++) {
+            for (const ip of ips) sendPtreal(ip, s, 0, 0, 0);
+            await new Promise(r => setTimeout(r, 50));
+          }
+          inSegmentMode = true;
+        }
+        if (segSetupGen !== myGen) return;
+        let prevLevel = 0;
+        let volMin = 0, volMax = 0;
+        const DECAY_UP   = 0.97;
+        const DECAY_DOWN = 0.85;
+        activeEffect = setInterval(() => {
+          const vol = danceMicVolume;
+          if (vol < volMin) volMin = vol;
+          if (vol > volMax) volMax = vol;
+          volMin = volMin * DECAY_DOWN + vol * (1 - DECAY_DOWN);
+          volMax = volMax * DECAY_UP   + vol * (1 - DECAY_UP);
+          const range = volMax - volMin;
+          const norm  = range > 0.01 ? (vol - volMin) / range : 0;
+          const level = Math.min(MAX_SEGS, Math.round(norm * MAX_SEGS));
+          if (level === prevLevel) return;
+          // Only update the changed frontier segments
+          if (level > prevLevel) {
+            for (let s = prevLevel; s < level; s++)
+              for (const ip of ips) sendPtreal(ip, s, 0, 255, 255); // cyan on
+          } else {
+            for (let s = level; s < prevLevel; s++)
+              for (const ip of ips) sendPtreal(ip, s, 0, 0, 0);     // off
+          }
+          prevLevel = level;
+        }, 50);
+      })();
+      return;
+    }
+
     if (effect === 'seg-chase') {
       const devices = controller.getGoveeDevices();
       if (!devices.length) return res.status(500).json({ error: 'No Govee devices found.' });

@@ -542,7 +542,7 @@
           <button class="btn fx-btn" data-id="strobe"      onclick="applyFx('strobe', this)">FX3</button>
           <button class="btn fx-btn" data-id="chase"       onclick="applyFx('chase', this)">CHASE</button>
           <button class="btn fx-btn" data-id="rainbow"     onclick="applyFx('rainbow', this)">RAINBOW</button>
-          <button class="btn fx-btn fx-disabled" disabled>FX6</button>
+          <button class="btn fx-btn" data-id="seg-dance"   onclick="applyFx('seg-dance', this)">SEG DANCE</button>
           <button class="btn fx-btn" data-id="seg-alt"     onclick="applyFx('seg-alt', this)">SEG ALT</button>
           <button class="btn fx-btn" data-id="seg-chase"   onclick="applyFx('seg-chase', this)">SEG CHASE</button>
         </div>
@@ -758,8 +758,8 @@
   // ── FX ───────────────────────────────────────────────────────────────────────
 
   async function applyFx(effectId, btn) {
-    const needsTimer = effectId !== 'dance';
-    const needsColor = !['rainbow', 'seg-rainbow', 'seg-alt', 'seg-chase'].includes(effectId);
+    const needsTimer = !['dance', 'seg-dance'].includes(effectId);
+    const needsColor = !['rainbow', 'seg-rainbow', 'seg-alt', 'seg-chase', 'seg-dance'].includes(effectId);
     if (!fxColorReady && needsColor && (needsTimer && !fxTimerReady)) {
       showToast('Select a color and a timer first', true); return;
     }
@@ -783,7 +783,7 @@
     }
     btn.classList.add('active');
     activeEffect = effectId;
-    if (effectId === 'dance') {
+    if (effectId === 'dance' || effectId === 'seg-dance') {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Got mic stream', micStream);
@@ -823,8 +823,8 @@
     await api('/api/effect', body);
     showToast(`Effect: ${btn.textContent}`);
 
-    // Dance runs until the button is clicked again — no timer
-    if (effectId === 'dance') return;
+    // Dance/seg-dance run until the button is clicked again — no timer
+    if (effectId === 'dance' || effectId === 'seg-dance') return;
 
     // Start countdown on the active timer button
     const timerBtn = document.querySelector('.timer-btn.active');
