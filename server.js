@@ -293,7 +293,7 @@ app.post('/api/effect', async (req, res) => {
       let activeIdx = 0;
       activeEffect = setInterval(() => {
         devices.forEach((d, idx) => {
-          const color = idx === activeIdx ? [r, g, b] : [10, 10, 10];
+          const color = idx === activeIdx ? [r, g, b] : [0, 0, 0];
           d.actions.setColor({ rgb: color }).catch(() => {});
         });
         activeIdx = (activeIdx + 1) % n;
