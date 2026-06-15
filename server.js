@@ -412,10 +412,15 @@ app.post('/api/update', (req, res) => {
   if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(UPDATE_PASSWORD_HASH))) {
     return res.status(401).json({ error: 'Incorrect password.' });
   }
-  exec('git pull origin main', { cwd: __dirname }, (err, stdout, stderr) => {
+  // When packaged via pkg, __dirname is a virtual snapshot path.
+  // Fall back to the directory containing the running executable.
+  const updateCwd = process.pkg ? path.dirname(process.execPath) : __dirname;
+  const shell = process.env.COMSPEC || 'cmd.exe';
+
+  exec('git pull origin main', { cwd: updateCwd, shell }, (err, stdout, stderr) => {
     if (err) return res.status(500).json({ error: stderr.trim() || err.message });
 
-    exec('npm run build:exe', { cwd: __dirname }, (err2, stdout2, stderr2) => {
+    exec('npm run build:exe', { cwd: updateCwd, shell }, (err2, stdout2, stderr2) => {
       if (err2) return res.status(500).json({ error: stderr2.trim() || err2.message });
       const src  = path.join(__dirname, 'dist', 'lightsystem.exe');
       const dest = path.join(os.homedir(), 'Desktop', 'lightsystem.exe');
