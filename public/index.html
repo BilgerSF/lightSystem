@@ -552,6 +552,7 @@
           <button class="btn fx-btn" data-id="seg-dance"   onclick="applyFx('seg-dance', this)">SEG DANCE</button>
           <button class="btn fx-btn" data-id="seg-alt"     onclick="applyFx('seg-alt', this)">SEG ALT</button>
           <button class="btn fx-btn" data-id="seg-chase"   onclick="applyFx('seg-chase', this)">SEG CHASE</button>
+          <button class="btn fx-btn" data-id="stair-chase" onclick="applyFx('stair-chase', this)">STAIR CHASE</button>
         </div>
 
       </div>
@@ -836,7 +837,7 @@
       }
     }
     const body = { effect: effectId, target: 'govee' };
-    if (effectId === 'fade' || effectId === 'dance' || effectId === 'chase') {
+    if (effectId === 'fade' || effectId === 'dance' || effectId === 'chase' || effectId === 'stair-chase') {
       const { r, g, b } = hexToRgb(fxColor);
       Object.assign(body, { r, g, b });
     }

@@ -313,6 +313,23 @@ app.post('/api/effect', async (req, res) => {
       return res.json({ ok: true });
     }
 
+    if (effect === 'stair-chase') {
+      const { r = 0, g = 255, b = 255 } = req.body;
+      const devices = controller.getStairDevices();
+      if (!devices.length) return res.status(500).json({ error: 'No stair devices configured — add IPs to config.govee.stairDeviceIps and restart.' });
+      await Promise.all(devices.map(d => d.actions.setOn().catch(() => {})));
+      const n = devices.length;
+      let activeIdx = 0;
+      activeEffect = setInterval(() => {
+        devices.forEach((d, idx) => {
+          const color = idx === activeIdx ? [r, g, b] : [0, 0, 0];
+          d.actions.setColor({ rgb: color }).catch(() => {});
+        });
+        activeIdx = (activeIdx + 1) % n;
+      }, 120);
+      return res.json({ ok: true });
+    }
+
     if (effect === 'rainbow') {
       const devices = controller.getGoveeDevices();
       if (!devices.length) return res.status(500).json({ error: 'No Govee devices found.' });

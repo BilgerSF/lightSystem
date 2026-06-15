@@ -32,6 +32,7 @@ let hueApi      = null;   // authenticated node-hue-api instance
 let hueLights   = [];     // all lights on the bridge
 let goveeClient  = null;  // govee-lan-control Client
 let goveeDevices = [];     // all selected Govee devices
+let stairDeviceIps = new Set(); // IPs of stair Govee devices (from config.govee.stairDeviceIps)
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ async function goveeAll(fn) {
  */
 async function init() {
   const config = loadConfig();
+  stairDeviceIps = new Set(config.govee.stairDeviceIps || []);
 
   // ── Hue ──
   console.log(`Connecting to Hue bridge at ${config.hue.bridgeIp}…`);
@@ -342,7 +344,8 @@ if (require.main === module) {
     // Spotlight
     spotlightActivate, spotlightLightsOn, spotlightLightsOff,
     setSpotlightColor, setSpotlightBrightness,
-    // Raw access for dance effect
-    getGoveeDevices: () => goveeDevices,
+    // Raw access for dance/chase effects
+    getGoveeDevices:  () => goveeDevices,
+    getStairDevices:  () => goveeDevices.filter(d => stairDeviceIps.has(d.ip)),
   };
 }
