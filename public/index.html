@@ -546,11 +546,8 @@
         <div class="fx-grid">
           <button class="btn fx-btn" data-id="fade"        onclick="applyFx('fade', this)">FADE</button>
           <button class="btn fx-btn" data-id="dance"       onclick="applyFx('dance', this)">DANCE</button>
-          <button class="btn fx-btn" data-id="strobe"      onclick="applyFx('strobe', this)">FX3</button>
           <button class="btn fx-btn" data-id="chase"       onclick="applyFx('chase', this)">CHASE</button>
           <button class="btn fx-btn" data-id="rainbow"     onclick="applyFx('rainbow', this)">RAINBOW</button>
-          <button class="btn fx-btn" data-id="seg-dance"   onclick="applyFx('seg-dance', this)">SEG DANCE</button>
-          <button class="btn fx-btn" data-id="seg-alt"     onclick="applyFx('seg-alt', this)">SEG ALT</button>
           <button class="btn fx-btn" data-id="seg-chase"   onclick="applyFx('seg-chase', this)">SEG CHASE</button>
           <button class="btn fx-btn" data-id="stair-chase" onclick="applyFx('stair-chase', this)">STAIR CHASE</button>
         </div>
@@ -782,8 +779,8 @@
   // ── FX ───────────────────────────────────────────────────────────────────────
 
   async function applyFx(effectId, btn) {
-    const needsTimer = !['dance', 'seg-dance'].includes(effectId);
-    const needsColor = !['rainbow', 'seg-rainbow', 'seg-alt', 'seg-chase', 'seg-dance'].includes(effectId);
+    const needsTimer = !['dance'].includes(effectId);
+    const needsColor = !['rainbow', 'seg-rainbow', 'seg-chase'].includes(effectId);
     if (!fxColorReady && needsColor && (needsTimer && !fxTimerReady)) {
       showToast('Select a color and a timer first', true); return;
     }
@@ -807,7 +804,7 @@
     }
     btn.classList.add('active');
     activeEffect = effectId;
-    if (effectId === 'dance' || effectId === 'seg-dance') {
+    if (effectId === 'dance') {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Got mic stream', micStream);
@@ -847,8 +844,8 @@
     await api('/api/effect', body);
     showToast(`Effect: ${btn.textContent}`);
 
-    // Dance/seg-dance run until the button is clicked again — no timer
-    if (effectId === 'dance' || effectId === 'seg-dance') return;
+    // Dance runs until the button is clicked again — no timer
+    if (effectId === 'dance') return;
 
     // Start countdown on the active timer button
     const timerBtn = document.querySelector('.timer-btn.active');
