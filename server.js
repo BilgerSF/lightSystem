@@ -61,22 +61,25 @@ function stopEffect() {
 
 async function applyPower(target, on) {
   const tasks = [];
-  if (target === 'hue'   || target === 'both') tasks.push(on ? controller.hueOn()   : controller.hueOff());
-  if (target === 'govee' || target === 'both') tasks.push(on ? controller.goveeOn() : controller.goveeOff());
+  if (target === 'hue'       || target === 'both') tasks.push(on ? controller.hueOn()              : controller.hueOff());
+  if (target === 'govee'     || target === 'both') tasks.push(on ? controller.goveeOn()            : controller.goveeOff());
+  if (target === 'spotlight')                      tasks.push(on ? controller.spotlightLightsOn() : controller.spotlightLightsOff());
   await Promise.all(tasks);
 }
 
 async function applyColor(target, r, g, b) {
   const tasks = [];
-  if (target === 'hue'   || target === 'both') tasks.push(controller.setHueColor(r, g, b));
-  if (target === 'govee' || target === 'both') tasks.push(controller.setGoveeColor(r, g, b));
+  if (target === 'hue'       || target === 'both') tasks.push(controller.setHueColor(r, g, b));
+  if (target === 'govee'     || target === 'both') tasks.push(controller.setGoveeColor(r, g, b));
+  if (target === 'spotlight')                      tasks.push(controller.setSpotlightColor(r, g, b));
   await Promise.all(tasks);
 }
 
 async function applyBrightness(target, value) {
   const tasks = [];
-  if (target === 'hue'   || target === 'both') tasks.push(controller.setHueBrightness(value));
-  if (target === 'govee' || target === 'both') tasks.push(controller.setGoveeBrightness(value));
+  if (target === 'hue'       || target === 'both') tasks.push(controller.setHueBrightness(value));
+  if (target === 'govee'     || target === 'both') tasks.push(controller.setGoveeBrightness(value));
+  if (target === 'spotlight')                      tasks.push(controller.setSpotlightBrightness(value));
   await Promise.all(tasks);
 }
 
@@ -151,6 +154,15 @@ wss.on('connection', (ws) => {
       if (typeof volume === 'number' && isFinite(volume)) danceMicVolume = volume;
     } catch { /* ignore malformed frames */ }
   });
+});
+
+app.post('/api/spotlight', async (_req, res) => {
+  stopEffect();
+  inSegmentMode = false;
+  try {
+    await controller.spotlightActivate();
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/power', async (req, res) => {

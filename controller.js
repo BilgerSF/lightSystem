@@ -265,6 +265,71 @@ async function setGoveeBrightness(pct) {
   await goveeAll(d => d.actions.setBrightness(Math.max(1, Math.min(100, pct))));
 }
 
+// ─── Spotlight helpers (Stage 1 + Stage 2 Hue lights only) ───────────────────
+
+function getSpotlightLights() {
+  return hueLights.filter(l => /stage\s*[12]/i.test(l.name));
+}
+
+/**
+ * spotlightActivate() — turn off ALL lights, then turn on Stage 1 & Stage 2 only.
+ */
+async function spotlightActivate() {
+  await Promise.all([
+    hueSetAll(new LightState().off()),
+    goveeAll(d => d.actions.setOff()),
+  ]);
+  const spots = getSpotlightLights();
+  if (!spots.length) throw new Error('No lights named "Stage 1" or "Stage 2" found on Hue bridge.');
+  await Promise.all(spots.map(l =>
+    hueApi.lights.setLightState(l.id, new LightState().on()).catch(err =>
+      console.warn(`  Spotlight ${l.name} (id ${l.id}) error:`, err.message)
+    )
+  ));
+  console.log(`✔ Spotlight active — ${spots.map(l => l.name).join(', ')}`);
+}
+
+/**
+ * spotlightLightsOn() / spotlightLightsOff() — toggle Stage 1 & 2 without disturbing other lights.
+ */
+async function spotlightLightsOn() {
+  const spots = getSpotlightLights();
+  await Promise.all(spots.map(l =>
+    hueApi.lights.setLightState(l.id, new LightState().on()).catch(err =>
+      console.warn(`  Spotlight ${l.name} error:`, err.message)
+    )
+  ));
+}
+
+async function spotlightLightsOff() {
+  const spots = getSpotlightLights();
+  await Promise.all(spots.map(l =>
+    hueApi.lights.setLightState(l.id, new LightState().off()).catch(err =>
+      console.warn(`  Spotlight ${l.name} error:`, err.message)
+    )
+  ));
+}
+
+async function setSpotlightColor(r, g, b) {
+  const [x, y] = rgbToXy(r, g, b);
+  const spots = getSpotlightLights();
+  await Promise.all(spots.map(l =>
+    hueApi.lights.setLightState(l.id, new LightState().on().xy(x, y)).catch(err =>
+      console.warn(`  Spotlight ${l.name} error:`, err.message)
+    )
+  ));
+}
+
+async function setSpotlightBrightness(pct) {
+  const p = Math.max(1, Math.min(100, pct));
+  const spots = getSpotlightLights();
+  await Promise.all(spots.map(l =>
+    hueApi.lights.setLightState(l.id, new LightState().on().brightness(p)).catch(err =>
+      console.warn(`  Spotlight ${l.name} error:`, err.message)
+    )
+  ));
+}
+
 // Run demo when executed directly; export API for external use
 if (require.main === module) {
   demo().catch(err => { console.error('\nError:', err.message); process.exit(1); });
@@ -274,6 +339,9 @@ if (require.main === module) {
     // Per-system
     hueOn, hueOff, setHueColor, setHueBrightness,
     goveeOn, goveeOff, setGoveeColor, setGoveeBrightness,
+    // Spotlight
+    spotlightActivate, spotlightLightsOn, spotlightLightsOff,
+    setSpotlightColor, setSpotlightBrightness,
     // Raw access for dance effect
     getGoveeDevices: () => goveeDevices,
   };

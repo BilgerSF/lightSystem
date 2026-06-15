@@ -108,7 +108,7 @@
     }
     .target-btn-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(4, 1fr);
       gap: 7px;
     }
     .target-btn {
@@ -489,6 +489,13 @@
             </svg>
             GOVEE
           </button>
+          <button class="btn target-btn" data-target="spotlight" onclick="activateSpotlight()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="8" y="2" width="8" height="5" rx="2"/>
+              <path d="M5 22 L9 7 L15 7 L19 22 Z"/>
+            </svg>
+            SPOT
+          </button>
         </div>
       </div>
 
@@ -575,7 +582,7 @@
 
   let currentTarget  = 'both';
   let activeEffect   = null;
-  const powerState  = { hue: false, govee: false };
+  const powerState  = { hue: false, govee: false, spotlight: false };
   let lightsOn       = false; // derived — reflects current target
   let currentBri     = 80;
   let activeTimer       = null;
@@ -630,7 +637,7 @@
     if (target === 'both') {
       lightsOn = powerState.hue || powerState.govee;
     } else {
-      lightsOn = powerState[target];
+      lightsOn = powerState[target] || false;
     }
     document.getElementById('powerIndicator').classList.toggle('on', lightsOn);
   }
@@ -670,8 +677,9 @@
 
   async function blackOut() {
     stopAllEffects();
-    powerState.hue   = false;
-    powerState.govee = false;
+    powerState.hue      = false;
+    powerState.govee     = false;
+    powerState.spotlight = false;
     lightsOn = false;
     document.getElementById('powerIndicator').classList.remove('on');
     await api('/api/power', { target: 'both', state: 'off' });
@@ -690,6 +698,21 @@
     document.getElementById('powerIndicator').classList.toggle('on', lightsOn);
     await api('/api/power', { state: lightsOn ? 'on' : 'off' });
     showToast(lightsOn ? 'Lights ON' : 'Lights OFF');
+  }
+
+  async function activateSpotlight() {
+    stopAllEffects();
+    currentTarget = 'spotlight';
+    document.querySelectorAll('.target-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.target === 'spotlight');
+    });
+    powerState.spotlight = true;
+    lightsOn = true;
+    document.getElementById('powerIndicator').classList.add('on');
+    try {
+      await api('/api/spotlight', {});
+      showToast('Spotlight: Stage 1 & 2 ON');
+    } catch (e) { /* error already shown by api() */ }
   }
 
   // ── Color ───────────────────────────────────────────────────────────────────
