@@ -285,7 +285,7 @@ app.post('/api/effect', async (req, res) => {
     }
 
     if (effect === 'chase') {
-      const { r = 0, g = 255, b = 255 } = req.body; // default cyan
+      const { r = 0, g = 255, b = 255 } = req.body; // default cyan (overridden by selected strip color)
       const devices = controller.getGoveeDevices();
       if (!devices.length) return res.status(500).json({ error: 'No Govee devices found.' });
       await controller.goveeOn();

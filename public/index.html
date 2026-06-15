@@ -813,7 +813,7 @@
       }
     }
     const body = { effect: effectId, target: 'govee' };
-    if (effectId === 'fade' || effectId === 'dance') {
+    if (effectId === 'fade' || effectId === 'dance' || effectId === 'chase') {
       const { r, g, b } = hexToRgb(fxColor);
       Object.assign(body, { r, g, b });
     }
