@@ -364,7 +364,7 @@ app.post('/api/effect', async (req, res) => {
       // and its first pass clears any leftover colour as it goes.
       // 2 packets per device per frame ≈ 12.5/s; at 15–20/s the chase stalled after
       // ~10 s, which looks like the strips' command queue backing up.
-      const FRAME_MS = 160;
+      const FRAME_MS = 140;
       let segIdx = 0;
       const step = () => {
         const prev = (segIdx - 1 + MAX_SEGS) % MAX_SEGS;
