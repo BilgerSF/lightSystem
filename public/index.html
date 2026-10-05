@@ -725,17 +725,21 @@
     } catch (e) { /* error already shown by api() */ }
   }
 
-  // Stairs button: ON → turns stair lights on and makes them the target, so
-  // color/brightness/power buttons apply to them. OFF → turns them off and
-  // restores the previous target.
+  // Stairs button: ON → turns every other light off, leaves only the stair
+  // lights on and makes them the target, so color/brightness/power buttons
+  // apply to them. OFF → turns them off and restores the previous target.
   async function toggleStairs() {
     const turnOn = !(powerState.stairs && currentTarget === 'stairs');
     if (turnOn) {
       if (currentTarget !== 'stairs') targetBeforeStairs = currentTarget;
-      powerState.stairs = true;
+      stopAllEffects();
+      powerState.hue       = false;
+      powerState.govee     = false;
+      powerState.spotlight = false;
+      powerState.stairs    = true;
       setTarget('stairs');
       try {
-        await api('/api/power', { target: 'stairs', state: 'on' });
+        await api('/api/stairs', {});
         showToast('Stairs ON');
       } catch (e) { /* error already shown by api() */ }
     } else {

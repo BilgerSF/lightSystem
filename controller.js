@@ -285,6 +285,21 @@ async function setStairBrightness(pct) {
   await stairAll(d => d.actions.setBrightness(Math.max(1, Math.min(100, pct))));
 }
 
+/**
+ * stairsActivate() — turn off every Hue light and non-stair Govee device,
+ * leaving only the stair lights on.
+ */
+async function stairsActivate() {
+  if (!goveeDevices.some(d => stairDeviceIps.has(d.ip))) {
+    throw new Error('No stair devices configured — add IPs to config.govee.stairDeviceIps and restart.');
+  }
+  await Promise.all([
+    hueSetAll(new LightState().off()),
+    goveeAll(d => stairDeviceIps.has(d.ip) ? d.actions.setOn() : d.actions.setOff()),
+  ]);
+  console.log('✔ Stairs active — all other lights off');
+}
+
 // ─── Spotlight helpers (Stage 1 + Stage 2 Hue lights only) ───────────────────
 
 function getSpotlightLights() {
@@ -360,7 +375,7 @@ if (require.main === module) {
     hueOn, hueOff, setHueColor, setHueBrightness,
     goveeOn, goveeOff, setGoveeColor, setGoveeBrightness,
     // Stairs
-    stairsOn, stairsOff, setStairColor, setStairBrightness,
+    stairsActivate, stairsOn, stairsOff, setStairColor, setStairBrightness,
     // Spotlight
     spotlightActivate, spotlightLightsOn, spotlightLightsOff,
     setSpotlightColor, setSpotlightBrightness,

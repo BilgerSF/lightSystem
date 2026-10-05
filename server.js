@@ -168,6 +168,15 @@ app.post('/api/spotlight', async (_req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/api/stairs', async (_req, res) => {
+  stopEffect();
+  inSegmentMode = false;
+  try {
+    await controller.stairsActivate();
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/power', async (req, res) => {
   stopEffect();
   const { target = 'both', state } = req.body;
