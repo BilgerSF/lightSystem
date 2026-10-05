@@ -35,8 +35,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 let ready           = false;
 let activeEffect    = null;
 let danceMicVolume  = 0;
-let inSegmentMode   = false;  // true after ptReal prime completes; skips power cycle
-let segSetupGen     = 0;      // incremented each seg effect call to cancel stale setups
+let effectCleanup   = null;   // optional fn run by stopEffect() to tidy up after an effect
 
 // ─── Static colour presets ────────────────────────────────────────────────────
 
@@ -57,6 +56,7 @@ const COLOR_PRESETS = {
 
 function stopEffect() {
   if (activeEffect) { clearInterval(activeEffect); activeEffect = null; }
+  if (effectCleanup) { effectCleanup(); effectCleanup = null; }
 }
 
 async function applyPower(target, on) {
@@ -161,7 +161,6 @@ wss.on('connection', (ws) => {
 
 app.post('/api/spotlight', async (_req, res) => {
   stopEffect();
-  inSegmentMode = false;
   try {
     await controller.spotlightActivate();
     res.json({ ok: true });
@@ -170,7 +169,6 @@ app.post('/api/spotlight', async (_req, res) => {
 
 app.post('/api/stairs', async (_req, res) => {
   stopEffect();
-  inSegmentMode = false;
   try {
     await controller.stairsActivate();
     res.json({ ok: true });
@@ -207,8 +205,6 @@ app.post('/api/brightness', async (req, res) => {
 app.post('/api/effect', async (req, res) => {
   stopEffect();
   const { target = 'both', effect } = req.body;
-  // Any non-segment effect sends colorwc which silently disables ptReal
-  if (!['seg-chase'].includes(effect)) inSegmentMode = false;
   try {
     // ── Static presets ──
     if (COLOR_PRESETS[effect]) {
@@ -363,36 +359,27 @@ app.post('/api/effect', async (req, res) => {
       if (!devices.length) return res.status(500).json({ error: 'No Govee devices found.' });
       const ips = devices.map(d => d.ip);
       const MAX_SEGS = 15;
-      const sendTurn = (ip, on) => {
-        const msg = Buffer.from(JSON.stringify({ msg: { cmd: 'turn', data: { value: on ? 1 : 0 } } }));
-        const sock = dgram.createSocket('udp4');
-        sock.send(msg, 4003, ip, () => sock.close());
+      // One lit segment walks along each strip: turn the previous segment off,
+      // light the next. No power cycle or priming — the chase starts instantly
+      // and its first pass clears any leftover colour as it goes.
+      // 2 packets per device per frame ≈ 10/s; at 15–20/s the chase stalled after
+      // ~10 s, which looks like the strips' command queue backing up.
+      const FRAME_MS = 200;
+      let segIdx = 0;
+      const step = () => {
+        const prev = (segIdx - 1 + MAX_SEGS) % MAX_SEGS;
+        for (const ip of ips) sendPtreal(ip, prev, 0, 0, 0);
+        for (const ip of ips) sendPtreal(ip, segIdx, 0, 255, 255);
+        segIdx = (segIdx + 1) % MAX_SEGS;
       };
-      const myGen = ++segSetupGen;
-      res.json({ ok: true }); // respond immediately — setup runs in background
-      (async () => {
-        if (!inSegmentMode) {
-          for (const ip of ips) sendTurn(ip, false);
-          await new Promise(r => setTimeout(r, 400));
-          if (segSetupGen !== myGen) return;
-          for (const ip of ips) sendTurn(ip, true);
-          await new Promise(r => setTimeout(r, 800));
-          if (segSetupGen !== myGen) return;
-          for (let s = 0; s < MAX_SEGS; s++) {
-            for (const ip of ips) sendPtreal(ip, s, 0, 0, 0);
-            await new Promise(r => setTimeout(r, 50));
-          }
-          inSegmentMode = true;
-        }
-        if (segSetupGen !== myGen) return;
-        let segIdx = 0;
-        activeEffect = setInterval(() => {
-          const prev = (segIdx - 1 + MAX_SEGS) % MAX_SEGS;
-          for (const ip of ips) sendPtreal(ip, prev, 0, 0, 0);
-          for (const ip of ips) sendPtreal(ip, segIdx, 0, 255, 255);
-          segIdx = (segIdx + 1) % MAX_SEGS;
-        }, 100);
-      })();
+      step();
+      activeEffect = setInterval(step, FRAME_MS);
+      // On stop, turn off the one segment still lit so every segment ends dark
+      effectCleanup = () => {
+        const lit = (segIdx - 1 + MAX_SEGS) % MAX_SEGS;
+        for (const ip of ips) sendPtreal(ip, lit, 0, 0, 0);
+      };
+      res.json({ ok: true });
       return;
     }
 
