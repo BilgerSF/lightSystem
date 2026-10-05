@@ -814,15 +814,14 @@
   // ── FX ───────────────────────────────────────────────────────────────────────
 
   async function applyFx(effectId, btn) {
-    const needsTimer = !['dance'].includes(effectId);
     const needsColor = !['rainbow', 'seg-rainbow', 'seg-chase'].includes(effectId);
-    if (!fxColorReady && needsColor && (needsTimer && !fxTimerReady)) {
+    if (!fxColorReady && needsColor && !fxTimerReady) {
       showToast('Select a color and a timer first', true); return;
     }
     if (!fxColorReady && needsColor) {
       showToast('Select a color strip first', true); return;
     }
-    if (needsTimer && !fxTimerReady) {
+    if (!fxTimerReady) {
       showToast('Select a timer first', true); return;
     }
     const isActive = btn.classList.contains('active');
@@ -878,9 +877,6 @@
     }
     await api('/api/effect', body);
     showToast(`Effect: ${btn.textContent}`);
-
-    // Dance runs until the button is clicked again — no timer
-    if (effectId === 'dance') return;
 
     // Start countdown on the active timer button
     const timerBtn = document.querySelector('.timer-btn.active');
