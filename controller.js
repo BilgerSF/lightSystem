@@ -95,6 +95,13 @@ async function goveeAll(fn) {
   )));
 }
 
+async function stairAll(fn) {
+  const stairs = goveeDevices.filter(d => stairDeviceIps.has(d.ip));
+  await Promise.all(stairs.map(d => Promise.resolve(fn(d)).catch(err =>
+    console.warn(`  Stair [${d.ip}] error:`, err.message)
+  )));
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
@@ -267,6 +274,17 @@ async function setGoveeBrightness(pct) {
   await goveeAll(d => d.actions.setBrightness(Math.max(1, Math.min(100, pct))));
 }
 
+// ─── Stair helpers (Govee devices listed in config.govee.stairDeviceIps) ──────
+
+async function stairsOn()  { await stairAll(d => d.actions.setOn()); }
+async function stairsOff() { await stairAll(d => d.actions.setOff()); }
+async function setStairColor(r, g, b) {
+  await stairAll(d => d.actions.setColor({ rgb: [r, g, b] }));
+}
+async function setStairBrightness(pct) {
+  await stairAll(d => d.actions.setBrightness(Math.max(1, Math.min(100, pct))));
+}
+
 // ─── Spotlight helpers (Stage 1 + Stage 2 Hue lights only) ───────────────────
 
 function getSpotlightLights() {
@@ -341,6 +359,8 @@ if (require.main === module) {
     // Per-system
     hueOn, hueOff, setHueColor, setHueBrightness,
     goveeOn, goveeOff, setGoveeColor, setGoveeBrightness,
+    // Stairs
+    stairsOn, stairsOff, setStairColor, setStairBrightness,
     // Spotlight
     spotlightActivate, spotlightLightsOn, spotlightLightsOff,
     setSpotlightColor, setSpotlightBrightness,

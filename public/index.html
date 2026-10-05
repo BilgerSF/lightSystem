@@ -108,7 +108,7 @@
     }
     .target-btn-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 7px;
     }
     .target-btn {
@@ -496,6 +496,12 @@
             </svg>
             SPOT
           </button>
+          <button class="btn target-btn" data-target="stairs" onclick="toggleStairs()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21h5v-5h5v-5h5V6h3"/>
+            </svg>
+            STAIRS
+          </button>
         </div>
       </div>
 
@@ -580,7 +586,8 @@
 
   let currentTarget  = 'both';
   let activeEffect   = null;
-  const powerState  = { hue: false, govee: false, spotlight: false };
+  const powerState  = { hue: false, govee: false, spotlight: false, stairs: false };
+  let targetBeforeStairs = 'both'; // restored when stairs are switched off
   let lightsOn       = false; // derived — reflects current target
   let currentBri     = 80;
   let activeTimer       = null;
@@ -678,6 +685,7 @@
     powerState.hue      = false;
     powerState.govee     = false;
     powerState.spotlight = false;
+    powerState.stairs    = false;
     lightsOn = false;
     document.getElementById('powerIndicator').classList.remove('on');
     await api('/api/power', { target: 'both', state: 'off' });
@@ -690,6 +698,9 @@
     if (currentTarget === 'both') {
       powerState.hue   = lightsOn;
       powerState.govee = lightsOn;
+    } else if (currentTarget === 'govee') {
+      powerState.govee  = lightsOn;
+      powerState.stairs = lightsOn; // stair strips are part of the Govee group
     } else {
       powerState[currentTarget] = lightsOn;
     }
@@ -705,12 +716,36 @@
       b.classList.toggle('active', b.dataset.target === 'spotlight');
     });
     powerState.spotlight = true;
+    powerState.stairs    = false; // spotlight turns every other light off
     lightsOn = true;
     document.getElementById('powerIndicator').classList.add('on');
     try {
       await api('/api/spotlight', {});
       showToast('Spotlight: Stage 1 & 2 ON');
     } catch (e) { /* error already shown by api() */ }
+  }
+
+  // Stairs button: ON → turns stair lights on and makes them the target, so
+  // color/brightness/power buttons apply to them. OFF → turns them off and
+  // restores the previous target.
+  async function toggleStairs() {
+    const turnOn = !(powerState.stairs && currentTarget === 'stairs');
+    if (turnOn) {
+      if (currentTarget !== 'stairs') targetBeforeStairs = currentTarget;
+      powerState.stairs = true;
+      setTarget('stairs');
+      try {
+        await api('/api/power', { target: 'stairs', state: 'on' });
+        showToast('Stairs ON');
+      } catch (e) { /* error already shown by api() */ }
+    } else {
+      powerState.stairs = false;
+      setTarget(targetBeforeStairs === 'spotlight' ? 'both' : targetBeforeStairs);
+      try {
+        await api('/api/power', { target: 'stairs', state: 'off' });
+        showToast('Stairs OFF');
+      } catch (e) { /* error already shown by api() */ }
+    }
   }
 
   // ── Color ───────────────────────────────────────────────────────────────────

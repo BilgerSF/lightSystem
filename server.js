@@ -64,6 +64,7 @@ async function applyPower(target, on) {
   if (target === 'hue'       || target === 'both') tasks.push(on ? controller.hueOn()              : controller.hueOff());
   if (target === 'govee'     || target === 'both') tasks.push(on ? controller.goveeOn()            : controller.goveeOff());
   if (target === 'spotlight')                      tasks.push(on ? controller.spotlightLightsOn() : controller.spotlightLightsOff());
+  if (target === 'stairs')                         tasks.push(on ? controller.stairsOn()          : controller.stairsOff());
   await Promise.all(tasks);
 }
 
@@ -72,6 +73,7 @@ async function applyColor(target, r, g, b) {
   if (target === 'hue'       || target === 'both') tasks.push(controller.setHueColor(r, g, b));
   if (target === 'govee'     || target === 'both') tasks.push(controller.setGoveeColor(r, g, b));
   if (target === 'spotlight')                      tasks.push(controller.setSpotlightColor(r, g, b));
+  if (target === 'stairs')                         tasks.push(controller.setStairColor(r, g, b));
   await Promise.all(tasks);
 }
 
@@ -80,6 +82,7 @@ async function applyBrightness(target, value) {
   if (target === 'hue'       || target === 'both') tasks.push(controller.setHueBrightness(value));
   if (target === 'govee'     || target === 'both') tasks.push(controller.setGoveeBrightness(value));
   if (target === 'spotlight')                      tasks.push(controller.setSpotlightBrightness(value));
+  if (target === 'stairs')                         tasks.push(controller.setStairBrightness(value));
   await Promise.all(tasks);
 }
 
