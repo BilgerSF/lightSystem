@@ -331,6 +331,30 @@ async function stairsActivate() {
   console.log('✔ Stairs active — all other lights off');
 }
 
+/**
+ * identifyGovee(ip) — light only this strip (bright white), every other strip off,
+ * so a person can see which physical strip has this IP.
+ */
+async function identifyGovee(ip) {
+  const target = goveeDevices.find(d => d.ip === ip);
+  if (!target) throw new Error(`Light ${ip} is not connected.`);
+  await goveeAll(d => d === target ? null : d.actions.setOff());
+  await target.actions.setOn();
+  await target.actions.setColor({ rgb: [255, 255, 255] });
+  await target.actions.setBrightness(100);
+}
+
+/**
+ * saveStairIps(ips) — save which Govee strips are on the stairs and apply it now.
+ * Writes next to the .exe when packaged (the bundled config is read-only).
+ */
+function saveStairIps(ips) {
+  const cfg = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
+  cfg.govee.stairDeviceIps = ips;
+  fs.writeFileSync(EXTERNAL_CONFIG, JSON.stringify(cfg, null, 2));
+  stairDeviceIps = new Set(ips);
+}
+
 // ─── Spotlight helpers (Stage 1 + Stage 2 Hue lights only) ───────────────────
 
 function getSpotlightLights() {
@@ -414,5 +438,7 @@ if (require.main === module) {
     getGoveeDevices:  () => goveeDevices,
     getHueLightCount: () => hueLights.length,
     getStairDevices:  () => goveeDevices.filter(d => stairDeviceIps.has(d.ip)),
+    getStairIps:      () => [...stairDeviceIps],
+    identifyGovee, saveStairIps,
   };
 }

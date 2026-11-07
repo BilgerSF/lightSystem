@@ -148,7 +148,7 @@ function sendPtreal(ip, seg, r, g, b) {
 
 // ─── API routes ───────────────────────────────────────────────────────────────
 
-app.get('/api/status', (_req, res) => res.json({ ready }));
+app.get('/api/status', (_req, res) => res.json({ ready, stairs: controller.getStairIps().length }));
 
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
@@ -230,6 +230,44 @@ app.post('/api/setup/stop', (_req, res) => {
   if (!setupProc) return res.json({ ok: true });
   setupProc.kill(); // 'exit' handler reconnects the lights
   res.json({ ok: true });
+});
+
+// ─── Set Up tab: stair test — light strips one by one, user says which are stairs
+
+function stairTestGuard(res) {
+  if (setupProc) { res.status(409).json({ error: 'Wait for setup to finish first.' }); return false; }
+  if (!ready)    { res.status(503).json({ error: 'Lights are still connecting — try again in a moment.' }); return false; }
+  return true;
+}
+
+app.post('/api/stair-test/start', async (_req, res) => {
+  if (!stairTestGuard(res)) return;
+  stopEffect();
+  const devices = controller.getGoveeDevices().map(d => ({ ip: d.ip, model: d.model }));
+  if (!devices.length) return res.status(500).json({ error: 'No light strips are connected. Run setup first.' });
+  await controller.goveeOff();
+  res.json({ devices, current: controller.getStairIps() });
+});
+
+app.post('/api/stair-test/show', async (req, res) => {
+  if (!stairTestGuard(res)) return;
+  try {
+    await controller.identifyGovee(req.body.ip);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// body: { ips: [...] } to save, or {} to cancel. Either way all strips come back on.
+app.post('/api/stair-test/finish', async (req, res) => {
+  try {
+    const { ips } = req.body || {};
+    if (Array.isArray(ips)) {
+      const known = new Set(controller.getGoveeDevices().map(d => d.ip));
+      controller.saveStairIps(ips.filter(ip => known.has(ip)));
+    }
+    await controller.goveeOn();
+    res.json({ ok: true, stairs: controller.getStairIps() });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/spotlight', async (_req, res) => {

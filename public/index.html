@@ -492,6 +492,23 @@
     /* Status page (placeholder) */
     .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
     .empty-state h2 { font-size: 18px; color: var(--text); margin: 4px 0 6px; }
+
+    /* Stair test */
+    #page-setup { display: flex; flex-direction: column; gap: 14px; }
+    .stair-progress { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stair-dot {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      background: var(--btn);
+      box-shadow: inset 1px 1px 3px rgba(0,0,0,0.2);
+    }
+    .stair-dot.current { background: #f0e6c8; color: var(--text); box-shadow: 0 0 0 2px #c89a40; }
+    .stair-dot.yes     { background: var(--green); color: #fff; }
+    .stair-dot.no      { background: #a49a90; color: #e4ded6; }
+    .stair-summary { font-size: 13px; line-height: 1.6; color: var(--text); }
+    .stair-summary ul { margin: 4px 0 0 18px; }
+    .ask-btn.secondary { background: none; box-shadow: none; color: var(--text-muted); text-decoration: underline; min-width: 0; padding: 13px 10px; }
     #page-lights { display: flex; flex-direction: column; gap: 14px; }
 
     /* ── Set Up page ──────────────────────────────────────────────────────── */
@@ -811,6 +828,24 @@
         </form>
       </div>
 
+    </div>
+
+    <!-- Stair lights test -->
+    <div class="setup-section">
+      <div class="setup-top">
+        <div class="setup-intro">
+          <div class="section-label">STAIR LIGHTS</div>
+          <h2>Which lights are on the stairs?</h2>
+          <p>We'll turn your light strips on one at a time. Look at your stairs and tell us
+             whether the light that turned on is a stair light. <span id="stairCurrent"></span></p>
+        </div>
+        <div class="setup-actions">
+          <button class="btn setup-start" id="stairStart" onclick="startStairTest()">
+            <span class="dot"></span><span id="stairStartLabel">Start Test</span>
+          </button>
+        </div>
+      </div>
+      <div class="ask-card" id="stairCard" hidden></div>
     </div>
   </div>
 
@@ -1198,7 +1233,8 @@
     document.getElementById('pageTitle').textContent = PAGE_TITLES[name] || '';
     closeMenu();
     try { localStorage.setItem('lightsystem-tab', name); } catch {}
-    if (name === 'setup') connectSetupSocket();
+    if (name === 'setup') { connectSetupSocket(); refreshStairInfo(); }
+    else if (stairTest) cancelStairTest(); // don't leave the strips mid-test
   }
 
   function toggleMenu() {
@@ -1214,6 +1250,11 @@
     document.getElementById('settingsMenu').hidden = true;
     document.getElementById('gearBtn').setAttribute('aria-expanded', 'false');
   }
+
+  // Closing the tab mid stair-test: turn the strips back on
+  window.addEventListener('pagehide', () => {
+    if (stairTest) navigator.sendBeacon('/api/stair-test/finish', new Blob(['{}'], { type: 'application/json' }));
+  });
 
   // Close on outside click or Escape
   document.addEventListener('click', e => { if (!e.target.closest('.settings')) closeMenu(); });
@@ -1364,7 +1405,11 @@
   }
 
   function renderAsk(title, hint, buttons, extra) {
-    const card = $('askCard');
+    renderCard($('askCard'), title, hint, buttons, extra);
+    setStatus('Waiting for your answer below.');
+  }
+
+  function renderCard(card, title, hint, buttons, extra) {
     card.className = 'ask-card';
     card.innerHTML = '';
     const t = document.createElement('div'); t.className = 'ask-title'; t.textContent = title; card.appendChild(t);
@@ -1376,8 +1421,138 @@
       card.appendChild(row);
     }
     card.hidden = false;
-    setStatus('Waiting for your answer below.');
     card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function cardButton(label, onclick, kind = '') {
+    const b = document.createElement('button');
+    b.className = 'btn ask-btn' + (kind ? ` ${kind}` : '');
+    b.textContent = label;
+    b.onclick = onclick;
+    return b;
+  }
+
+  // ── Stair test ──
+  // Lights one strip at a time; the user says whether it's on the stairs.
+
+  let stairTest = null; // { devices: [{ip, model}], idx, answers: {ip: true|false} }
+
+  async function postJson(url, body = {}) {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    return data;
+  }
+
+  function setStairRunning(on) {
+    $('stairStart').classList.toggle('running', on);
+    $('stairStart').disabled = on;
+    $('stairStartLabel').textContent = on ? 'Test Running' : 'Start Test';
+  }
+
+  async function refreshStairInfo() {
+    try {
+      const { stairs } = await fetch('/api/status').then(r => r.json());
+      $('stairCurrent').textContent = typeof stairs === 'number'
+        ? `Right now ${stairs} light${stairs === 1 ? ' is' : 's are'} set as stair lights.` : '';
+    } catch {}
+  }
+
+  async function startStairTest() {
+    try {
+      const { devices, current } = await postJson('/api/stair-test/start');
+      stairTest = { devices, idx: 0, answers: {} };
+      // Pre-fill with the current choice so "Back" shows the old answer
+      for (const d of devices) if (current.includes(d.ip)) stairTest.answers[d.ip] = true;
+      setStairRunning(true);
+      showStairStep();
+    } catch (e) { showToast(e.message, true); }
+  }
+
+  function stairProgress() {
+    const row = document.createElement('div');
+    row.className = 'stair-progress';
+    stairTest.devices.forEach((d, i) => {
+      const dot = document.createElement('div');
+      const ans = stairTest.answers[d.ip];
+      dot.className = 'stair-dot' + (i === stairTest.idx ? ' current' : i < stairTest.idx ? (ans ? ' yes' : ' no') : '');
+      dot.textContent = i + 1;
+      row.appendChild(dot);
+    });
+    return row;
+  }
+
+  async function showStairStep() {
+    const { devices, idx } = stairTest;
+    if (idx >= devices.length) return showStairSummary();
+    const d = devices[idx];
+    const buttons = [
+      cardButton('Yes, stairs', () => answerStair(true), 'primary'),
+      cardButton('No', () => answerStair(false)),
+      cardButton('Light it again', () => lightStair(d.ip), 'secondary'),
+    ];
+    if (idx > 0) buttons.push(cardButton('Back', () => { stairTest.idx--; showStairStep(); }, 'secondary'));
+    buttons.push(cardButton('Stop test', cancelStairTest, 'secondary'));
+    renderCard($('stairCard'), `Light ${idx + 1} of ${devices.length} is on`,
+      'Look at your stairs. Is the light that just turned on (bright white) one of the stair lights?',
+      buttons, stairProgress());
+    await lightStair(d.ip);
+  }
+
+  async function lightStair(ip) {
+    const btns = $('stairCard').querySelectorAll('button');
+    btns.forEach(b => b.disabled = true);
+    try { await postJson('/api/stair-test/show', { ip }); }
+    catch (e) { showToast(e.message, true); }
+    finally { btns.forEach(b => b.disabled = false); }
+  }
+
+  function answerStair(isStair) {
+    stairTest.answers[stairTest.devices[stairTest.idx].ip] = isStair;
+    stairTest.idx++;
+    showStairStep();
+  }
+
+  function showStairSummary() {
+    const picked = stairTest.devices
+      .map((d, i) => ({ ...d, n: i + 1 }))
+      .filter(d => stairTest.answers[d.ip]);
+    const summary = document.createElement('div');
+    summary.className = 'stair-summary';
+    if (picked.length) {
+      summary.innerHTML = '<ul>' + picked.map(d => `<li>Light ${d.n} <span style="color:var(--text-muted)">(${d.ip})</span></li>`).join('') + '</ul>';
+    } else {
+      summary.textContent = 'You didn\'t pick any stair lights, so the STAIRS button won\'t turn anything on.';
+    }
+    renderCard($('stairCard'),
+      picked.length ? `You picked ${picked.length} stair light${picked.length === 1 ? '' : 's'}` : 'No stair lights picked',
+      'Save to use these with the STAIRS button. All your strips will turn back on.',
+      [ cardButton('Save', () => finishStairTest(picked.map(d => d.ip)), 'primary'),
+        cardButton('Start over', () => { stairTest.idx = 0; showStairStep(); }),
+        cardButton('Cancel', cancelStairTest, 'secondary') ],
+      summary);
+  }
+
+  async function finishStairTest(ips) {
+    try {
+      const { stairs } = await postJson('/api/stair-test/finish', { ips });
+      stairTest = null;
+      setStairRunning(false);
+      renderCard($('stairCard'), 'Saved!',
+        `The STAIRS button will now control ${stairs.length} light${stairs.length === 1 ? '' : 's'}.`,
+        [ cardButton('Done', () => { $('stairCard').hidden = true; }, 'primary') ]);
+      $('stairCard').classList.add('done');
+      refreshStairInfo();
+    } catch (e) { showToast(e.message, true); }
+  }
+
+  async function cancelStairTest() {
+    if (!stairTest) return;
+    stairTest = null;
+    setStairRunning(false);
+    $('stairCard').hidden = true;
+    try { await postJson('/api/stair-test/finish'); showToast('Stair test stopped — nothing changed'); }
+    catch (e) { showToast(e.message, true); }
   }
 
   function showAsk(q) {
