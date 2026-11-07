@@ -25,6 +25,7 @@ const controller = require('./controller');
 const app    = express();
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server });
+wss.on('error', () => {}); // ws re-emits server errors (e.g. EADDRINUSE); server's own handler deals with them
 const PORT   = 3000;
 
 app.use(express.json());
@@ -525,33 +526,115 @@ app.post('/api/effect', async (req, res) => {
 
 const UPDATE_PASSWORD_HASH = 'd102a5e24978f472c57411fb2d5a04a7e23451955316112d8276637bda628eb0'; // sha256 of update password
 
-app.post('/api/update', (req, res) => {
+const REPO_URL = 'https://github.com/BilgerSF/lightSystem.git';
+
+function run(cmd, cwd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { cwd, shell: process.env.COMSPEC || 'cmd.exe', maxBuffer: 10 * 1024 * 1024 },
+      (err, stdout, stderr) => err ? reject(new Error((stderr || '').trim() || err.message)) : resolve(stdout.trim()));
+  });
+}
+
+function isRepo(dir) {
+  try {
+    return fs.existsSync(path.join(dir, '.git')) &&
+      JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).name === 'lightsystem';
+  } catch { return false; }
+}
+
+// The packaged .exe usually runs from the Desktop, which isn't a git checkout —
+// look for the source folder in the usual places.
+function findRepo() {
+  const home = os.homedir();
+  const exeDir = path.dirname(process.execPath);
+  const candidates = [
+    process.env.LIGHTSYSTEM_REPO,
+    !process.pkg && __dirname,
+    exeDir, path.join(exeDir, 'lightSystem'),
+    path.join(home, 'Desktop', 'lightSystem'),
+    path.join(home, 'lightSystem'),
+    path.join(home, 'Documents', 'lightSystem'),
+    path.join(home, 'Documents', 'GitHub', 'lightSystem'),
+    path.join(home, 'source', 'repos', 'lightSystem'),
+  ].filter(Boolean);
+  return candidates.find(isRepo) || null;
+}
+
+let updating = false;
+
+app.post('/api/update', async (req, res) => {
   const { password } = req.body || {};
   if (typeof password !== 'string') return res.status(401).json({ error: 'Password required.' });
   const hash = crypto.createHash('sha256').update(password).digest('hex');
   if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(UPDATE_PASSWORD_HASH))) {
     return res.status(401).json({ error: 'Incorrect password.' });
   }
-  // When packaged via pkg, __dirname is a virtual snapshot path.
-  // Fall back to the directory containing the running executable.
-  const updateCwd = process.pkg ? path.dirname(process.execPath) : __dirname;
-  const shell = process.env.COMSPEC || 'cmd.exe';
+  if (updating) return res.status(409).json({ error: 'An update is already running.' });
+  updating = true;
 
-  exec('git pull origin main', { cwd: updateCwd, shell }, (err, stdout, stderr) => {
-    if (err) return res.status(500).json({ error: stderr.trim() || err.message });
+  const log = [];
+  try {
+    // 1. Get the latest source (clone it if this PC doesn't have it yet)
+    let repo = findRepo();
+    if (repo) {
+      log.push((await run('git pull origin main', repo)) || 'Already up to date.');
+    } else {
+      repo = path.join(os.homedir(), 'lightSystem');
+      if (fs.existsSync(repo)) throw new Error(`${repo} exists but isn't a LightSystem git folder. Rename or delete it, then try again.`);
+      await run(`git clone "${REPO_URL}" "${repo}"`, os.homedir());
+      log.push(`Downloaded LightSystem to ${repo}.`);
+    }
 
-    exec('npm run build:exe', { cwd: updateCwd, shell }, (err2, stdout2, stderr2) => {
-      if (err2) return res.status(500).json({ error: stderr2.trim() || err2.message });
-      const src  = path.join(__dirname, 'dist', 'lightsystem.exe');
+    // 2. Build
+    try { await run('npm --version', repo); }
+    catch { throw new Error('Node.js is needed to update. Install it from nodejs.org, then try again.'); }
+    await run('npm install --no-audit --no-fund', repo);
+    await run('npm run build:exe', repo);
+    const built = path.join(repo, 'dist', 'lightsystem.exe');
+    log.push('Built the new version.');
+
+    // 3a. Running from source (node server.js): drop the exe on the Desktop as before
+    if (!process.pkg) {
       const dest = path.join(os.homedir(), 'Desktop', 'lightsystem.exe');
-      fs.copyFile(src, dest, (err3) => {
-        const pullMsg  = stdout.trim()  || 'Already up to date.';
-        const buildMsg = stdout2.trim() || 'Build complete.';
-        const copyMsg  = err3 ? `Warning: could not copy to Desktop — ${err3.message}` : 'Copied to Desktop.';
-        res.json({ ok: true, message: `${pullMsg}\n${buildMsg}\n${copyMsg}` });
-      });
-    });
-  });
+      try { fs.copyFileSync(built, dest); log.push('Copied to Desktop.'); }
+      catch (e) { log.push(`Could not copy to Desktop — ${e.message}`); }
+      log.push('Restart the dashboard to use the new version.');
+      return res.json({ ok: true, message: log.join('\n') });
+    }
+
+    // 3b. Running as the .exe: Windows won't overwrite a running exe, but it
+    // can be renamed. Move ours aside, put the new one in place, restart.
+    const exe = process.execPath;
+    const old = exe + '.old';
+    if (path.resolve(built) !== path.resolve(exe)) {
+      try { fs.unlinkSync(old); } catch {}
+      fs.renameSync(exe, old);
+      try { fs.copyFileSync(built, exe); }
+      catch (e) { fs.renameSync(old, exe); throw new Error(`Couldn't install the new version: ${e.message}`); }
+    }
+    log.push('Restarting…');
+    res.json({ ok: true, restarting: true, message: log.join('\n') });
+
+    setTimeout(() => {
+      // pkg injects PKG_EXECPATH into every child's env; an exe that inherits it runs as
+      // plain Node (and exits at once) instead of the dashboard. Clear it in the shell
+      // itself — deleting it from `env` doesn't help, pkg adds it back.
+      // Fully detached with no shared pipes: if the new exe inherited our stdout,
+      // we'd wait on it while it waits for our port — a deadlock.
+      const { spawn } = require('child_process');
+      const env = { ...process.env, LIGHTSYSTEM_RESTARTED: '1' }; // don't open another browser tab
+      spawn(process.env.COMSPEC || 'cmd.exe',
+        ['/d', '/s', '/c', `"set "PKG_EXECPATH=" & start "" /D "${path.dirname(exe)}" "${exe}""`],
+        { env, detached: true, stdio: 'ignore', windowsVerbatimArguments: true }).unref();
+      server.close();
+      controller.shutdown();
+      setTimeout(() => process.exit(0), 300);
+    }, 500);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  } finally {
+    updating = false;
+  }
 });
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
@@ -570,9 +653,21 @@ process.on('unhandledRejection', (err) => console.error('Unhandled error (ignore
     console.error('Init failed — dashboard will still open but lights may not respond:', e.message);
   }
 
+  // Left behind by a self-update (it was the running exe, so it couldn't be deleted then)
+  if (process.pkg) { try { fs.unlinkSync(process.execPath + '.old'); } catch {} }
+
+  // After a self-update the old process may still be releasing the port — retry briefly
+  let attempts = 0;
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && ++attempts <= 60) return setTimeout(() => server.listen(PORT), 500);
+    console.error('Server error:', err.message);
+    process.exit(1);
+  });
+
   server.listen(PORT, () => {
     const url = `http://localhost:${PORT}`;
     console.log(`\n✔ Dashboard →  ${url}\n`);
+    if (process.env.LIGHTSYSTEM_RESTARTED) return; // the page reloads itself after an update
     exec(`start "" "${url}"`, (err) => {
       if (err) {
         console.error('Failed to launch browser:', err.message);

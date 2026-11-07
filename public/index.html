@@ -1281,6 +1281,13 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
+      if (data.restarting) {
+        btn.textContent = '↻ Restarting…';
+        showToast('Updated! Restarting the dashboard…');
+        await waitForRestart();
+        location.reload();
+        return;
+      }
       showToast(data.message || 'Updated!');
     } catch (e) {
       showToast(e.message, true);
@@ -1824,6 +1831,15 @@
 
     if (sub) { const s = document.createElement('div'); s.className = 'light-sub'; s.textContent = sub; card.appendChild(s); }
     return card;
+  }
+
+  // After a self-update: wait for the old server to go away and the new one to answer
+  async function waitForRestart() {
+    await new Promise(r => setTimeout(r, 2000));
+    for (let i = 0; i < 90; i++) {
+      try { if ((await fetch('/api/status', { cache: 'no-store' })).ok) return; } catch {}
+      await new Promise(r => setTimeout(r, 1000));
+    }
   }
 
   // ── Toast ────────────────────────────────────────────────────────────────────
