@@ -113,11 +113,18 @@ async function init() {
   stairDeviceIps = new Set(config.govee.stairDeviceIps || []);
 
   // ── Hue ──
-  console.log(`Connecting to Hue bridge at ${config.hue.bridgeIp}…`);
-  hueApi = await hueApiFactory.createLocal(config.hue.bridgeIp).connect(config.hue.username);
-  const allLights = await hueApi.lights.getAll();
-  hueLights = allLights;
-  console.log(`✔ Hue connected — ${hueLights.length} light(s) found: ${hueLights.map(l => l.name).join(', ')}`);
+  // A Hue failure (e.g. bridge got a new DHCP IP) must not block Govee setup.
+  let hueError = null;
+  try {
+    console.log(`Connecting to Hue bridge at ${config.hue.bridgeIp}…`);
+    hueApi = await hueApiFactory.createLocal(config.hue.bridgeIp).connect(config.hue.username);
+    hueLights = await hueApi.lights.getAll();
+    console.log(`✔ Hue connected — ${hueLights.length} light(s) found: ${hueLights.map(l => l.name).join(', ')}`);
+  } catch (e) {
+    hueError = e;
+    hueApi = null; hueLights = [];
+    console.error(`✖ Hue init failed at ${config.hue.bridgeIp}: ${e.message} — check the bridge IP in config.json (https://discovery.meethue.com).`);
+  }
 
   // ── Govee ──
   const targetIps = new Set(config.govee.deviceIps);
@@ -145,6 +152,7 @@ async function init() {
   });
 
   console.log(`✔ Govee ready — ${goveeDevices.length}/${targetIps.size} device(s) connected.`);
+  if (hueError) throw new Error(`Govee OK, but Hue failed: ${hueError.message}`);
 }
 
 /**
