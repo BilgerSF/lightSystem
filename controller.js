@@ -145,14 +145,17 @@ async function init() {
       ));
     }, 12000);
 
+    // Stays attached after init: picks up strips switched on later, and replaces the
+    // stale object when the library drops a strip (offline ~5 min) and re-creates it.
     goveeClient.on('deviceAdded', device => {
-      if (targetIps.has(device.ip) && !goveeDevices.find(d => d.ip === device.ip)) {
-        goveeDevices.push(device);
-        console.log(`  ✔ ${device.model} at ${device.ip}`);
-        if (goveeDevices.length === targetIps.size) {
-          clearTimeout(timeout);
-          resolve();
-        }
+      if (!targetIps.has(device.ip)) return;
+      const i = goveeDevices.findIndex(d => d.ip === device.ip);
+      if (i !== -1) { goveeDevices[i] = device; return; }
+      goveeDevices.push(device);
+      console.log(`  ✔ ${device.model} at ${device.ip}`);
+      if (goveeDevices.length === targetIps.size) {
+        clearTimeout(timeout);
+        resolve();
       }
     });
   });
@@ -344,6 +347,97 @@ async function identifyGovee(ip) {
   await target.actions.setBrightness(100);
 }
 
+// ─── Status (dashboard Status page) ──────────────────────────────────────────
+
+/**
+ * getHueStatus() — fresh state of every light from the bridge.
+ * A light the bridge can't reach (switched off at the wall) has reachable=false.
+ */
+async function getHueStatus() {
+  const { hue } = loadConfig();
+  if (!hueApi) return { bridgeIp: hue.bridgeIp, bridgeConnected: false, lights: [] };
+  try {
+    const lights = await hueApi.lights.getAll();
+    return {
+      bridgeIp: hue.bridgeIp,
+      bridgeConnected: true,
+      lights: lights.map(l => ({
+        id: l.id,
+        name: l.name,
+        product: l.productname,
+        connected: !!l.state.reachable,
+        on: !!l.state.on,
+        brightness: Math.round((l.state.bri || 0) / 254 * 100),
+        colormode: l.state.colormode,
+        hue: l.state.hue, sat: l.state.sat, ct: l.state.ct,
+      })),
+    };
+  } catch (e) {
+    return { bridgeIp: hue.bridgeIp, bridgeConnected: false, error: e.message, lights: [] };
+  }
+}
+
+/**
+ * getGoveeStatus() — ask every strip for its status and report which answered.
+ * The library only notices an offline strip after ~5 min, so probe directly.
+ */
+// UDP replies get lost now and then; only call a strip disconnected after it has
+// been silent this long (≈2–3 missed checks), so one dropped packet isn't a red alarm.
+const GOVEE_OFFLINE_AFTER_MS = 12000;
+const goveeLastSeen = new Map(); // ip -> { at, state }
+
+async function getGoveeStatus(waitMs = 1500) {
+  const config = loadConfig();
+  const seen = new Map(); // ip -> state (answered during this check)
+  const cleanups = [];
+
+  if (goveeClient) {
+    // Re-scan too, so a strip that just came back is re-created by the library.
+    try { goveeClient.discover(); } catch {}
+    const onAdded = d => seen.set(d.ip, { ...d.state, model: d.model });
+    goveeClient.on('deviceAdded', onAdded);
+    cleanups.push(() => goveeClient && goveeClient.off('deviceAdded', onAdded));
+
+    // Only probe devices the library still knows: a reply from one it has dropped
+    // makes its message handler throw.
+    const probed = goveeClient.devicesArray || [];
+    for (const d of probed) {
+      const onStatus = state => seen.set(d.ip, { ...state, model: d.model });
+      d.on('updatedStatus', onStatus);
+      cleanups.push(() => d.off('updatedStatus', onStatus));
+    }
+    // Ask, then re-ask whoever hasn't answered yet
+    const ask = () => probed.forEach(d => { if (!seen.has(d.ip)) try { d.updateValues(); } catch {} });
+    ask();
+    await sleep(waitMs / 3); ask();
+    await sleep(waitMs / 3); ask();
+    await sleep(waitMs / 3);
+    cleanups.forEach(fn => fn());
+  }
+
+  const now = Date.now();
+  for (const [ip, state] of seen) goveeLastSeen.set(ip, { at: now, state });
+
+  return {
+    strips: config.govee.deviceIps.map((ip, i) => {
+      const last = goveeLastSeen.get(ip);
+      const connected = !!last && now - last.at < GOVEE_OFFLINE_AFTER_MS;
+      const s = connected ? last.state : null;
+      const known = goveeDevices.find(d => d.ip === ip);
+      return {
+        ip,
+        n: i + 1,
+        model: s?.model || known?.model || null,
+        stairs: stairDeviceIps.has(ip),
+        connected,
+        on: s ? !!s.isOn : null,
+        brightness: s ? s.brightness : null,
+        color: s ? s.color : null,
+      };
+    }),
+  };
+}
+
 /**
  * saveStairIps(ips) — save which Govee strips are on the stairs and apply it now.
  * Writes next to the .exe when packaged (the bundled config is read-only).
@@ -440,5 +534,6 @@ if (require.main === module) {
     getStairDevices:  () => goveeDevices.filter(d => stairDeviceIps.has(d.ip)),
     getStairIps:      () => [...stairDeviceIps],
     identifyGovee, saveStairIps,
+    getHueStatus, getGoveeStatus,
   };
 }

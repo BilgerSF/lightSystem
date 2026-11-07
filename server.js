@@ -150,6 +150,16 @@ function sendPtreal(ip, seg, r, g, b) {
 
 app.get('/api/status', (_req, res) => res.json({ ready, stairs: controller.getStairIps().length }));
 
+// Status page: which Hue lights and Govee strips are reachable right now
+app.get('/api/lights-status', async (_req, res) => {
+  if (setupProc) return res.json({ busy: 'setup' });
+  if (!ready)    return res.json({ busy: 'connecting' });
+  try {
+    const [hue, govee] = await Promise.all([controller.getHueStatus(), controller.getGoveeStatus()]);
+    res.json({ hue, govee, checkedAt: Date.now() });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
     try {
@@ -545,6 +555,10 @@ app.post('/api/update', (req, res) => {
 });
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
+
+// A stray UDP reply can make the Govee library's async message handler throw;
+// log it instead of letting Node kill the dashboard.
+process.on('unhandledRejection', (err) => console.error('Unhandled error (ignored):', err?.message || err));
 
 (async () => {
   console.log('Initializing light controller…');
