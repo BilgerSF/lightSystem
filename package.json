@@ -20,7 +20,8 @@
     ],
     "scripts": [
       "controller.js",
-      "server.js"
+      "server.js",
+      "setup.js"
     ]
   },
   "dependencies": {

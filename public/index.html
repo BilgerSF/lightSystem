@@ -439,6 +439,172 @@
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { background: rgba(140,40,40,0.92); }
 
+    /* ── Top bar: back button + settings menu ─────────────────────────────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 40px;
+    }
+    .top-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn { padding: 10px 16px; border-radius: 40px; font-size: 10px; }
+    .back-btn[hidden], .page-title[hidden] { display: none; }
+    .page-title { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-label); }
+
+    .settings { position: relative; margin-left: auto; }
+    .gear-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+    }
+    .gear-btn svg { transition: transform 0.3s ease; }
+    .gear-btn[aria-expanded="true"] svg { transform: rotate(60deg); }
+    .settings-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 190px;
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 6px;
+      display: flex; flex-direction: column; gap: 4px;
+      box-shadow: 6px 6px 16px rgba(0,0,0,0.28), -2px -2px 8px rgba(255,255,255,0.35);
+      z-index: 50;
+    }
+    .settings-menu[hidden] { display: none; }
+    .menu-item {
+      display: flex; align-items: center; gap: 10px;
+      background: none; border: none; border-radius: 8px;
+      padding: 11px 12px;
+      font-family: inherit; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text); cursor: pointer; text-align: left;
+      transition: background var(--transition);
+    }
+    .menu-item:hover, .menu-item:focus-visible { background: var(--btn); outline: none; }
+    .menu-item.current { background: #b5afa8; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.15); }
+    .menu-item svg { flex-shrink: 0; color: var(--text-muted); }
+
+    .page[hidden] { display: none !important; }
+
+    /* Status page (placeholder) */
+    .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+    .empty-state h2 { font-size: 18px; color: var(--text); margin: 4px 0 6px; }
+    #page-lights { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Set Up page ──────────────────────────────────────────────────────── */
+    .setup-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #b5afa8;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.18), inset -1px -1px 3px rgba(255,255,255,0.18);
+    }
+    .setup-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .setup-intro h2 { font-size: 18px; font-weight: 700; margin: 4px 0 6px; }
+    .setup-intro p  { font-size: 13px; line-height: 1.5; color: var(--text-muted); max-width: 560px; }
+    .setup-actions { display: flex; gap: 10px; align-items: center; }
+    .setup-start {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 26px;
+      border-radius: 40px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+    }
+    .setup-start .dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: inset 1px 1px 2px rgba(0,0,0,0.25);
+      transition: all 0.3s;
+    }
+    .setup-start.running .dot { background: var(--green); box-shadow: 0 0 6px rgba(64,184,112,0.6); animation: pulse 1.2s infinite; }
+    .setup-start:disabled { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
+    .setup-cancel { padding: 10px 18px; border-radius: 40px; font-size: 10px; color: var(--text-muted); }
+    @keyframes pulse { 50% { opacity: 0.35; } }
+
+    .setup-status {
+      font-size: 13px; font-weight: 600; color: var(--text-label);
+      display: flex; align-items: center; gap: 8px; min-height: 18px;
+    }
+    .spinner {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(46,35,24,0.18); border-top-color: var(--text);
+      animation: spin 0.8s linear infinite; display: none;
+    }
+    .setup-status.busy .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Question card */
+    .ask-card {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      box-shadow: 3px 3px 8px rgba(0,0,0,0.2), -1px -1px 4px rgba(255,255,255,0.4);
+      border-left: 5px solid #c89a40;
+    }
+    .ask-card[hidden], .setup-cancel[hidden] { display: none; }
+    .ask-card.done { border-left-color: var(--green); }
+    .ask-card.fail { border-left-color: var(--red); }
+    .ask-title { font-size: 16px; font-weight: 700; }
+    .ask-hint  { font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+    .ask-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+    .ask-btn { padding: 13px 28px; font-size: 12px; border-radius: 10px; min-width: 120px; }
+    .ask-btn.primary { background: #8fb39a; }
+    .ask-btn.primary:hover { background: #9fc3aa; }
+    .ask-recommend { display: block; font-size: 9px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 3px; }
+    .device-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .device-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--btn); border-radius: 8px; padding: 10px 12px; cursor: pointer;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.18), -1px -1px 3px rgba(255,255,255,0.4);
+    }
+    .device-item input { width: 18px; height: 18px; accent-color: var(--text); }
+    .device-item small { display: block; font-size: 11px; font-weight: 500; color: var(--text-muted); }
+
+    /* Console */
+    .console-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .console-head { display: flex; justify-content: space-between; align-items: center; }
+    .console-clear { background: none; border: none; font: inherit; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; color: var(--text-label); cursor: pointer; }
+    .console {
+      background: #2e2318;
+      color: #e8ddd0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      height: 280px;
+      overflow-y: auto;
+      font-family: 'Cascadia Mono', Consolas, 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: inset 2px 2px 6px rgba(0,0,0,0.5);
+    }
+    .console .err  { color: #f0a090; }
+    .console .echo { color: #9fd8b0; font-weight: 700; }
+    .console .muted { color: #8a7e74; }
+    .console-input { display: flex; gap: 8px; }
+    .console-input input {
+      flex: 1; min-width: 0;
+      background: #e4ded6; border: none; border-radius: 8px;
+      padding: 10px 12px; font: inherit; font-size: 13px; color: var(--text);
+      box-shadow: inset 2px 2px 4px rgba(0,0,0,0.15);
+    }
+    .console-input input:disabled { opacity: 0.5; }
+    .console-input .btn { padding: 0 20px; }
+    .console-input .btn:disabled { opacity: 0.5; pointer-events: none; }
+
     /* ── Disabled state ───────────────────────────────────────────────────── */
     .disabled { pointer-events: none; opacity: 0.45; }
 
@@ -461,6 +627,34 @@
 <body>
 
 <div class="panel">
+
+  <!-- Top bar: back button (sub-pages only) + settings menu -->
+  <div class="top-bar">
+    <div class="top-left">
+      <button class="btn back-btn" id="backBtn" onclick="showPage('lights')" hidden>← Home</button>
+      <span class="page-title" id="pageTitle" hidden></span>
+    </div>
+    <div class="settings">
+      <button class="btn gear-btn" id="gearBtn" aria-label="Settings" aria-haspopup="menu" aria-expanded="false" onclick="toggleMenu()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <div class="settings-menu" id="settingsMenu" role="menu" hidden>
+        <button class="menu-item" role="menuitem" data-page="setup" onclick="showPage('setup')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          Set Up
+        </button>
+        <button class="menu-item" role="menuitem" data-page="status" onclick="showPage('status')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Status
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-lights">
 
   <!-- Two-column main body -->
   <div class="main-grid" id="controls">
@@ -575,6 +769,60 @@
       <div class="power-indicator" id="powerIndicator"></div>
     </button>
     <button class="update-btn" id="updateBtn" onclick="pullUpdate()">↓ Update</button>
+  </div>
+
+  </div><!-- /page-lights -->
+
+  <!-- ── Set Up page ─────────────────────────────────────────────────────── -->
+  <div class="page" id="page-setup" hidden>
+    <div class="setup-section">
+
+      <div class="setup-top">
+        <div class="setup-intro">
+          <div class="section-label">SET UP</div>
+          <h2>Find your lights</h2>
+          <p>Use this if some lights stopped responding, or after you add a new light.
+             Turn all your lights on at the wall first. Setup will ask you a few simple questions.
+             Your lights pause until it's finished.</p>
+        </div>
+        <div class="setup-actions">
+          <button class="btn setup-cancel" id="setupCancel" onclick="cancelSetup()" hidden>Cancel</button>
+          <button class="btn setup-start" id="setupStart" onclick="startSetup()">
+            <span class="dot"></span><span id="setupStartLabel">Start Setup</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setup-status" id="setupStatus"><span class="spinner"></span><span id="setupStatusText">Ready when you are.</span></div>
+
+      <!-- Friendly question / result card -->
+      <div class="ask-card" id="askCard" hidden></div>
+
+      <!-- Console -->
+      <div class="console-wrap">
+        <div class="console-head">
+          <div class="section-label">DETAILS</div>
+          <button class="console-clear" onclick="clearConsole()">CLEAR</button>
+        </div>
+        <div class="console" id="console"><span class="muted">Setup messages will appear here.</span></div>
+        <form class="console-input" onsubmit="sendTyped(event)">
+          <input id="consoleInput" autocomplete="off" placeholder="Type an answer here and press Send" disabled />
+          <button class="btn" id="consoleSend" disabled>Send</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Status page (placeholder) ───────────────────────────────────────── -->
+  <div class="page" id="page-status" hidden>
+    <div class="setup-section">
+      <div class="empty-state">
+        <div class="section-label">STATUS</div>
+        <h2>Nothing here yet</h2>
+        <p>Light status will show up here soon.</p>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -936,6 +1184,278 @@
     }
   }
 
+  // ── Pages + settings menu ────────────────────────────────────────────────────
+
+  const PAGE_TITLES = { setup: 'Set Up', status: 'Status' };
+
+  function showPage(name) {
+    if (!document.getElementById(`page-${name}`)) name = 'lights';
+    document.querySelectorAll('.page').forEach(p => p.hidden = p.id !== `page-${name}`);
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.toggle('current', m.dataset.page === name));
+    const sub = name !== 'lights';
+    document.getElementById('backBtn').hidden = !sub;
+    document.getElementById('pageTitle').hidden = !sub;
+    document.getElementById('pageTitle').textContent = PAGE_TITLES[name] || '';
+    closeMenu();
+    try { localStorage.setItem('lightsystem-tab', name); } catch {}
+    if (name === 'setup') connectSetupSocket();
+  }
+
+  function toggleMenu() {
+    const menu = document.getElementById('settingsMenu');
+    if (menu.hidden) {
+      menu.hidden = false;
+      document.getElementById('gearBtn').setAttribute('aria-expanded', 'true');
+      menu.querySelector('.menu-item').focus();
+    } else closeMenu();
+  }
+
+  function closeMenu() {
+    document.getElementById('settingsMenu').hidden = true;
+    document.getElementById('gearBtn').setAttribute('aria-expanded', 'false');
+  }
+
+  // Close on outside click or Escape
+  document.addEventListener('click', e => { if (!e.target.closest('.settings')) closeMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+
+  // ── Set Up ───────────────────────────────────────────────────────────────────
+  // setup.js runs on the server; its output streams here over the WebSocket.
+  // A line printed without a trailing newline is a readline question, which we
+  // turn into big friendly buttons (raw console + text box stay available).
+
+  let setupSocket   = null;
+  let setupRunning  = false;
+  let pendingTail   = '';     // text after the last newline = possible question
+  let askTimer      = null;
+  let foundDevices  = [];     // parsed from "[0] H6175 — 192.168.1.145"
+
+  const $ = id => document.getElementById(id);
+
+  function connectSetupSocket() {
+    if (setupSocket && setupSocket.readyState <= WebSocket.OPEN) return;
+    setupSocket = new WebSocket(`ws://${location.host}`);
+    setupSocket.onopen = () => setupSocket.send(JSON.stringify({ type: 'setup-subscribe' }));
+    setupSocket.onmessage = e => handleSetupMessage(JSON.parse(e.data));
+    setupSocket.onclose = () => {
+      setupSocket = null;
+      if (!$('page-setup').hidden) setTimeout(connectSetupSocket, 2000);
+    };
+  }
+
+  function handleSetupMessage(msg) {
+    if (msg.type === 'setup-history') {
+      clearConsole();
+      foundDevices = [];
+      setRunning(msg.running);
+      if (msg.log) handleOutput(msg.log);
+      if (!msg.running && msg.log) setStatus('Last setup has finished.');
+    } else if (msg.type === 'setup-output') {
+      handleOutput(msg.data, msg.error ? 'err' : msg.echo ? 'echo' : null);
+    } else if (msg.type === 'setup-status') {
+      if (msg.state === 'running') {
+        setRunning(true);
+        setStatus('Starting setup…', true);
+      } else if (msg.state === 'reconnecting') {
+        setRunning(false);
+        hideAsk();
+        setStatus('Reconnecting your lights…', true);
+      } else if (msg.state === 'done') {
+        showResult(msg);
+      }
+    }
+  }
+
+  function setRunning(on) {
+    setupRunning = on;
+    const btn = $('setupStart');
+    btn.classList.toggle('running', on);
+    btn.disabled = on;
+    $('setupStartLabel').textContent = on ? 'Setup Running' : 'Start Setup';
+    $('setupCancel').hidden = !on;
+    $('consoleInput').disabled = !on;
+    $('consoleSend').disabled  = !on;
+  }
+
+  function setStatus(text, busy = false) {
+    $('setupStatusText').textContent = text;
+    $('setupStatus').classList.toggle('busy', busy);
+  }
+
+  // Plain-language status for the step setup.js is on
+  const STATUS_HINTS = [
+    // [pattern, message, show spinner]
+    [/Scanning for Hue bridge/i,      'Looking for your Hue bridge…', true],
+    [/Hue API user created/i,         'Hue bridge connected.', false],
+    [/Scanning for Govee devices/i,   'Searching for light strips… this takes about 12 seconds.', true],
+    [/No Govee devices found/i,       'No light strips were found.', false],
+    [/No Hue bridge found/i,          'The Hue bridge could not be found.', false],
+    [/Link button not pressed/i,      'The bridge button wasn\'t pressed in time.', false],
+    [/config\.json saved/i,           'Saving your settings…', true],
+  ];
+
+  function handleOutput(text, cls = null) {
+    appendConsole(text, cls);
+    if (cls === 'echo') return;
+
+    for (const line of text.split('\n')) {
+      const dev = line.match(/\[(\d+)\]\s+(\S+)\s+—\s+([\d.]+)/);
+      if (dev) foundDevices[+dev[1]] = { idx: +dev[1], model: dev[2], ip: dev[3] };
+      if (/Found: /.test(line)) {
+        const n = (($('console').textContent.match(/Found: /g)) || []).length;
+        setStatus(`Searching for light strips… found ${n} so far.`, true);
+      }
+      for (const [re, msg, busy] of STATUS_HINTS) if (re.test(line)) setStatus(msg, setupRunning && busy);
+    }
+
+    // Track the unfinished last line; if nothing more arrives shortly, it's a question
+    const nl = text.lastIndexOf('\n');
+    pendingTail = nl === -1 ? pendingTail + text : text.slice(nl + 1);
+    clearTimeout(askTimer);
+    if (setupRunning && pendingTail.trim()) askTimer = setTimeout(() => showAsk(recentLines(2)), 150);
+  }
+
+  // Some questions span two lines ("Govee already configured (…)." + "Reconfigure? [y/N]")
+  function recentLines(n) {
+    return $('console').textContent.split('\n').slice(-n).join('\n').trim();
+  }
+
+  function appendConsole(text, cls) {
+    const el = $('console');
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    const muted = el.querySelector('.muted:only-child');
+    if (muted) muted.remove();
+    const span = document.createElement('span');
+    if (cls) span.className = cls;
+    span.textContent = cls === 'echo' ? `› ${text}` : text;
+    el.appendChild(span);
+    if (atBottom) el.scrollTop = el.scrollHeight;
+  }
+
+  function clearConsole() { $('console').innerHTML = ''; }
+
+  // ── Question card ──
+
+  function hideAsk() { $('askCard').hidden = true; $('askCard').innerHTML = ''; $('askCard').className = 'ask-card'; }
+
+  function answer(text) {
+    if (!setupSocket || setupSocket.readyState !== WebSocket.OPEN) {
+      showToast('Lost connection to the dashboard — try again', true); return;
+    }
+    pendingTail = '';
+    hideAsk();
+    setupSocket.send(JSON.stringify({ type: 'setup-input', text }));
+    setStatus('Working…', true);
+  }
+
+  function sendTyped(e) {
+    e.preventDefault();
+    const input = $('consoleInput');
+    answer(input.value);
+    input.value = '';
+  }
+
+  function askButton(label, value, { primary = false, note = '' } = {}) {
+    const b = document.createElement('button');
+    b.className = 'btn ask-btn' + (primary ? ' primary' : '');
+    b.innerHTML = label + (note ? `<span class="ask-recommend">${note}</span>` : '');
+    b.onclick = () => answer(value);
+    return b;
+  }
+
+  function renderAsk(title, hint, buttons, extra) {
+    const card = $('askCard');
+    card.className = 'ask-card';
+    card.innerHTML = '';
+    const t = document.createElement('div'); t.className = 'ask-title'; t.textContent = title; card.appendChild(t);
+    if (hint) { const h = document.createElement('div'); h.className = 'ask-hint'; h.textContent = hint; card.appendChild(h); }
+    if (extra) card.appendChild(extra);
+    if (buttons.length) {
+      const row = document.createElement('div'); row.className = 'ask-buttons';
+      buttons.forEach(b => row.appendChild(b));
+      card.appendChild(row);
+    }
+    card.hidden = false;
+    setStatus('Waiting for your answer below.');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function showAsk(q) {
+    if (/Hue already configured/i.test(q)) {
+      renderAsk('Set up the Hue bridge again?',
+        'Usually not needed. Only choose Yes if your Hue lights stopped responding — you\'ll need to press the button on top of the bridge.',
+        [askButton('No', 'n', { primary: true, note: 'RECOMMENDED' }), askButton('Yes', 'y')]);
+    } else if (/Govee already configured/i.test(q)) {
+      const n = (q.match(/\((\d+) device/) || [])[1];
+      renderAsk('Search for light strips?',
+        `You currently have ${n || 'some'} light strip${n === '1' ? '' : 's'} saved. Choose Yes to search again — make sure every strip is switched on first, because any strip that's off will be left out.`,
+        [askButton('Yes, search', 'y', { primary: true }), askButton('No', 'n')]);
+    } else if (/LINK BUTTON/i.test(q)) {
+      renderAsk('Press the button on your Hue bridge',
+        'It\'s the large round button on top of the Hue bridge. Press it once, then tap the button below within 30 seconds.',
+        [askButton('I pressed it', '', { primary: true })]);
+    } else if (/Enter device numbers/i.test(q)) {
+      const list = document.createElement('div');
+      list.className = 'device-list';
+      foundDevices.filter(Boolean).forEach(d => {
+        const label = document.createElement('label');
+        label.className = 'device-item';
+        label.innerHTML = `<input type="checkbox" checked data-idx="${d.idx}"><span>Light strip ${d.idx + 1}<small>${d.model} · ${d.ip}</small></span>`;
+        list.appendChild(label);
+      });
+      const save = document.createElement('button');
+      save.className = 'btn ask-btn primary';
+      save.textContent = 'Save these lights';
+      save.onclick = () => {
+        const boxes = [...list.querySelectorAll('input')];
+        const picked = boxes.filter(b => b.checked).map(b => b.dataset.idx);
+        if (!picked.length) { showToast('Pick at least one light', true); return; }
+        answer(picked.length === boxes.length ? '' : picked.join(','));
+      };
+      renderAsk(`Found ${foundDevices.filter(Boolean).length} light strips`,
+        'Untick any you don\'t want the dashboard to control, then save.', [save], list);
+    } else {
+      // Unknown question — show it as-is and point to the text box
+      renderAsk(q, 'Type your answer in the box under the details and press Send.', [
+        askButton('Yes', 'y'), askButton('No', 'n'), askButton('Continue', ''),
+      ]);
+      $('consoleInput').focus();
+    }
+  }
+
+  function showResult({ code, hue, govee, error }) {
+    setRunning(false);
+    const card = $('askCard');
+    const ok = code === 0 && hue > 0 && govee > 0;
+    renderAsk(
+      ok ? 'All done!' : (code === 0 ? 'Setup finished — some lights are missing' : 'Setup didn\'t finish'),
+      `Connected: ${hue} Hue light${hue === 1 ? '' : 's'} and ${govee} light strip${govee === 1 ? '' : 's'}.` +
+        (ok ? ' Your lights are ready to use.'
+            : ' Check that the missing lights are switched on and on the same Wi-Fi, then run setup again. The details below show what happened.'),
+      [ (() => { const b = document.createElement('button'); b.className = 'btn ask-btn primary'; b.textContent = 'Go to Home'; b.onclick = () => { hideAsk(); showPage('lights'); }; return b; })() ]);
+    card.classList.add(ok ? 'done' : 'fail');
+    setStatus(ok ? 'Setup complete.' : 'Setup finished with problems.');
+    if (error) console.warn(error);
+  }
+
+  async function startSetup() {
+    connectSetupSocket();
+    clearConsole();
+    hideAsk();
+    foundDevices = [];
+    pendingTail = '';
+    try {
+      const res = await fetch('/api/setup/start', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+    } catch (e) { showToast(e.message, true); }
+  }
+
+  async function cancelSetup() {
+    if (!confirm('Stop setup? Nothing new will be saved.')) return;
+    await fetch('/api/setup/stop', { method: 'POST' }).catch(() => {});
+  }
+
   // ── Toast ────────────────────────────────────────────────────────────────────
 
   let toastTimer;
@@ -961,6 +1481,9 @@
   // ── Init ─────────────────────────────────────────────────────────────────────
 
   buildSwatches();
+
+  if (location.hash) showPage(location.hash.slice(1));
+  else try { const saved = localStorage.getItem('lightsystem-tab'); if (saved) showPage(saved); } catch {}
 
   document.getElementById('controls').classList.add('disabled');
 

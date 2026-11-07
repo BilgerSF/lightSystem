@@ -24,7 +24,11 @@ const { discovery, api: hueApiFactory, model } = require('node-hue-api');
 const LightState = model.lightStates.LightState;
 const GoveeClient = require('govee-lan-control').default;
 
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+// In the packaged .exe, __dirname is a read-only snapshot. A config.json next to
+// the .exe (written by the dashboard's Set Up tab) takes priority over the bundled one.
+const BUNDLED_CONFIG = path.join(__dirname, 'config.json');
+const EXTERNAL_CONFIG = process.pkg ? path.join(path.dirname(process.execPath), 'config.json') : BUNDLED_CONFIG;
+const configPath = () => fs.existsSync(EXTERNAL_CONFIG) ? EXTERNAL_CONFIG : BUNDLED_CONFIG;
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -37,6 +41,7 @@ let stairDeviceIps = new Set(); // IPs of stair Govee devices (from config.govee
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function loadConfig() {
+  const CONFIG_PATH = configPath();
   if (!fs.existsSync(CONFIG_PATH)) {
     throw new Error('config.json not found — run `node setup.js` first.');
   }
@@ -110,6 +115,7 @@ async function stairAll(fn) {
  */
 async function init() {
   const config = loadConfig();
+  goveeDevices = [];
   stairDeviceIps = new Set(config.govee.stairDeviceIps || []);
 
   // ── Hue ──
@@ -153,6 +159,23 @@ async function init() {
 
   console.log(`✔ Govee ready — ${goveeDevices.length}/${targetIps.size} device(s) connected.`);
   if (hueError) throw new Error(`Govee OK, but Hue failed: ${hueError.message}`);
+}
+
+/**
+ * shutdown() — release the Govee UDP socket (port 4002) and forget all devices,
+ * so another process (setup.js) can scan. Call init() again afterwards.
+ */
+function shutdown() {
+  if (goveeClient) {
+    // The library's destroy() doesn't stop per-device update timers, so do it here
+    // first — otherwise they fire later against the closed socket.
+    for (const d of goveeClient.devicesArray || []) { try { d.destroy(); } catch {} }
+    try { goveeClient.destroy(); } catch (e) { console.warn('Govee shutdown:', e.message); }
+  }
+  goveeClient = null;
+  goveeDevices = [];
+  hueApi = null;
+  hueLights = [];
 }
 
 /**
@@ -378,7 +401,7 @@ if (require.main === module) {
   demo().catch(err => { console.error('\nError:', err.message); process.exit(1); });
 } else {
   module.exports = {
-    init, turnOn, turnOff, setColor, setBrightness,
+    init, shutdown, turnOn, turnOff, setColor, setBrightness,
     // Per-system
     hueOn, hueOff, setHueColor, setHueBrightness,
     goveeOn, goveeOff, setGoveeColor, setGoveeBrightness,
@@ -389,6 +412,7 @@ if (require.main === module) {
     setSpotlightColor, setSpotlightBrightness,
     // Raw access for dance/chase effects
     getGoveeDevices:  () => goveeDevices,
+    getHueLightCount: () => hueLights.length,
     getStairDevices:  () => goveeDevices.filter(d => stairDeviceIps.has(d.ip)),
   };
 }

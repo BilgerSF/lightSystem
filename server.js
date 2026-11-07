@@ -11,7 +11,7 @@
 
 'use strict';
 
-const { exec } = require('child_process');
+const { exec, fork } = require('child_process');
 const crypto     = require('crypto');
 const fs         = require('fs');
 const os         = require('os');
@@ -153,10 +153,83 @@ app.get('/api/status', (_req, res) => res.json({ ready }));
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
     try {
-      const { volume } = JSON.parse(raw);
-      if (typeof volume === 'number' && isFinite(volume)) danceMicVolume = volume;
+      const msg = JSON.parse(raw);
+      if (typeof msg.volume === 'number' && isFinite(msg.volume)) danceMicVolume = msg.volume;
+      // Set Up tab
+      if (msg.type === 'setup-subscribe') {
+        setupClients.add(ws);
+        ws.send(JSON.stringify({ type: 'setup-history', running: !!setupProc, log: setupLog }));
+      }
+      if (msg.type === 'setup-input' && setupProc && typeof msg.text === 'string') {
+        setupProc.stdin.write(msg.text.replace(/[\r\n]/g, '') + '\n');
+        broadcastSetup({ type: 'setup-output', data: msg.text + '\n', echo: true });
+      }
     } catch { /* ignore malformed frames */ }
   });
+  ws.on('close', () => setupClients.delete(ws));
+});
+
+// ─── Set Up tab: run setup.js and stream it to the browser ──────────────────
+
+let setupProc    = null;
+let setupLog     = '';          // full transcript so a reloaded page can catch up
+const setupClients = new Set(); // sockets viewing the Set Up tab
+
+function broadcastSetup(payload) {
+  if (payload.type === 'setup-output') setupLog = (setupLog + payload.data).slice(-50000);
+  const json = JSON.stringify(payload);
+  for (const ws of setupClients) if (ws.readyState === ws.OPEN) ws.send(json);
+}
+
+async function reconnectLights() {
+  try {
+    await controller.init();
+    ready = true;
+  } catch (e) {
+    // init only throws after Govee is set up, so the dashboard is still usable
+    ready = true;
+    console.error('Reconnect after setup:', e.message);
+    return e.message;
+  }
+  return null;
+}
+
+app.post('/api/setup/start', async (_req, res) => {
+  if (setupProc) return res.status(409).json({ error: 'Setup is already running.' });
+  stopEffect();
+  // setup.js scans on UDP 4002 — release ours first or the scan replies may go to us
+  ready = false;
+  controller.shutdown();
+
+  setupLog = '';
+  setupProc = fork(path.join(__dirname, 'setup.js'), [], {
+    silent: true, // gives us piped stdin/stdout/stderr
+    env: { ...process.env, LIGHTSYSTEM_DASHBOARD: '1' },
+  });
+  setupProc.stdout.setEncoding('utf8');
+  setupProc.stderr.setEncoding('utf8');
+  setupProc.stdout.on('data', data => broadcastSetup({ type: 'setup-output', data }));
+  setupProc.stderr.on('data', data => broadcastSetup({ type: 'setup-output', data, error: true }));
+  setupProc.on('error', e => broadcastSetup({ type: 'setup-output', data: `\n${e.message}\n`, error: true }));
+  setupProc.on('exit', async (code) => {
+    setupProc = null;
+    broadcastSetup({ type: 'setup-status', state: 'reconnecting', code });
+    const err = await reconnectLights();
+    broadcastSetup({
+      type: 'setup-status', state: 'done', code,
+      hue:   controller.getHueLightCount(),
+      govee: controller.getGoveeDevices().length,
+      error: err,
+    });
+  });
+  broadcastSetup({ type: 'setup-status', state: 'running' });
+  res.json({ ok: true });
+});
+
+app.post('/api/setup/stop', (_req, res) => {
+  if (!setupProc) return res.json({ ok: true });
+  setupProc.kill(); // 'exit' handler reconnects the lights
+  res.json({ ok: true });
 });
 
 app.post('/api/spotlight', async (_req, res) => {

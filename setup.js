@@ -18,12 +18,16 @@ const path = require('path');
 const readline = require('readline');
 const { discovery, api: hueApiFactory, v3 } = require('node-hue-api');
 const GoveeClient = require('govee-lan-control').default;
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+// Packaged .exe: __dirname is a read-only snapshot, so read/write config.json next
+// to the .exe instead (controller.js prefers that file). Seed it from the bundled copy.
+const BUNDLED_CONFIG = path.join(__dirname, 'config.json');
+const CONFIG_PATH = process.pkg ? path.join(path.dirname(process.execPath), 'config.json') : BUNDLED_CONFIG;
+const READ_PATH = fs.existsSync(CONFIG_PATH) ? CONFIG_PATH : BUNDLED_CONFIG;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function loadConfig() {
-  try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(READ_PATH, 'utf8')); }
   catch { return { hue: { bridgeIp: '', username: '' }, govee: { deviceIp: '' } }; }
 }
 
@@ -156,5 +160,12 @@ async function setupGovee(config) {
   }
 
   saveConfig(config);
-  console.log('Setup complete! Run  node test.js  to control your lights.\n');
-})();
+  console.log(process.env.LIGHTSYSTEM_DASHBOARD
+    ? 'Setup complete! Reconnecting your lights…\n'
+    : 'Setup complete! Run  npm start  to open the dashboard.\n');
+  // The Govee scanner's socket/interval and piped stdin keep Node alive — exit explicitly
+  process.exit(0);
+})().catch(err => {
+  console.error('\nSetup failed:', err.message);
+  process.exit(1);
+});
