@@ -9,7 +9,9 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #c62828;
+      --bg:          #a8461a;   /* Thanksgiving: fallback under the gradient + leaves */
+      --bg-gradient: linear-gradient(160deg, #6e2a0c 0%, #a8461a 40%, #c9762b 75%, #e0a14a 100%);
+      --bg-leaves:   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'%3E%3Cdefs%3E%3Cg id='m'%3E%3Cpath d='M0-22 L4-12 L12-16 L9-6 L18-4 L10 3 L13 10 L4 8 L1 17 L-1 17 L-4 8 L-13 10 L-10 3 L-18-4 L-9-6 L-12-16 L-4-12 Z'/%3E%3Cpath d='M0 17 L0 27' stroke='%235d3a1a' stroke-width='2' stroke-linecap='round'/%3E%3C/g%3E%3Cg id='o'%3E%3Cpath d='M0-20 C11-12 12 6 0 18 C-12 6 -11-12 0-20 Z'/%3E%3Cpath d='M0-16 L0 24' stroke='%235d3a1a' stroke-width='1.5' stroke-linecap='round' opacity='.7'/%3E%3C/g%3E%3Cg id='a'%3E%3Cellipse cx='0' cy='5' rx='6' ry='8' fill='%239a6230'/%3E%3Cpath d='M-8 0 C-8-8 8-8 8 0 Z' fill='%235d3a1a'/%3E%3Cpath d='M0-6 L2-11' stroke='%235d3a1a' stroke-width='2' stroke-linecap='round'/%3E%3C/g%3E%3C/defs%3E%3Cg opacity='.6'%3E%3Cuse href='%23m' fill='%23f39c12' transform='translate(38 46) rotate(-18)'/%3E%3Cuse href='%23o' fill='%23d35400' transform='translate(150 30) rotate(35)'/%3E%3Cuse href='%23m' fill='%23b03a2e' transform='translate(235 80) rotate(25) scale(.85)'/%3E%3Cuse href='%23a' transform='translate(95 120) rotate(-12)'/%3E%3Cuse href='%23o' fill='%23f1c40f' transform='translate(200 165) rotate(-50) scale(.9)'/%3E%3Cuse href='%23m' fill='%23e67e22' transform='translate(55 200) rotate(40) scale(1.1)'/%3E%3Cuse href='%23a' transform='translate(250 240) rotate(20) scale(.9)'/%3E%3Cuse href='%23o' fill='%23c0392b' transform='translate(140 245) rotate(80) scale(.8)'/%3E%3Cuse href='%23m' fill='%23f5b041' transform='translate(160 110) rotate(-40) scale(.7)'/%3E%3C/g%3E%3C/svg%3E");
       --panel:       #c8c2ba;
       --btn:         #afa298;
       --btn-hi:      #bdb0a6;
@@ -29,7 +31,8 @@
     html { scroll-behavior: smooth; }
 
     body {
-      background: var(--bg);
+      background: var(--bg-leaves), var(--bg-gradient), var(--bg);
+      background-attachment: fixed;
       color: var(--text);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       min-height: 100vh;
